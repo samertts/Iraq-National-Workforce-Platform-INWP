@@ -1,0 +1,48 @@
+# INWP Sovereign Secret Scanning Configuration
+# Block secrets from entering the sovereign codebase
+
+title = "INWP Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "inwp-private-key"
+description = "Ed25519 private key material"
+regex = '''-----BEGIN (ED25519|PRIVATE KEY)-----'''
+tags = ["security", "crypto"]
+
+[[rules]]
+id = "inwp-jwt-secret"
+description = "JWT or signing secret in code"
+regex = '''(?i)(signing[-_]?secret|jwt[-_]?secret|hmac[-_]?key)\s*[:=]\s*["'].+["']'''
+tags = ["security", "auth"]
+
+[[rules]]
+id = "inwp-database-url"
+description = "PostgreSQL connection string with credentials"
+regex = '''postgres(ql)?:\/\/[^:]+:[^@]+@'''
+tags = ["security", "database"]
+
+[[rules]]
+id = "inwp-nats-credentials"
+description = "NATS credentials in code"
+regex = '''nats:\/\/[^:]+:[^@]+@'''
+tags = ["security", "messaging"]
+
+[[rules]]
+id = "inwp-token-secret"
+description = "Token, api_key, or secret inline"
+regex = '''(?i)(token|api[-_]?key|secret)\s*[:=]\s*["'][A-Za-z0-9_\-\.]{16,}["']'''
+tags = ["security", "credentials"]
+
+[allowlist]
+description = "Allowlisted files and paths"
+paths = [
+    "(?i)\.md$",
+    "(?i)test",
+    "(?i)example",
+    "(?i)mock",
+    "(?i)fixture",
+    "(?i)_test\.rs$",
+]

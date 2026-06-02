@@ -1,0 +1,82 @@
+[node]
+node_id = "00000000-0000-0000-0000-000000000001"
+node_name = "national-hub-001"
+node_type = "NationalHub"
+ministry_id = "00000000-0000-0000-0000-000000000000"
+site_id = "00000000-0000-0000-0000-000000000000"
+region = "baghdad"
+data_dir = "/data/sync-engine"
+
+[storage]
+database_url = "postgres://sync:sync@localhost:5432/inwp_sync"
+max_connections = 50
+min_connections = 10
+acquire_timeout_secs = 30
+max_lifetime_secs = 1800
+idle_timeout_secs = 600
+run_migrations = true
+
+[transport]
+grpc_listen = "0.0.0.0"
+grpc_port = 50052
+mesh_port = 50053
+http_port = 8080
+websocket_port = 8081
+nats_url = "nats://localhost:4222"
+mdns_enabled = true
+mdns_service_name = "_inwp-sync._tcp.local."
+max_message_size = 10485760
+keepalive_interval_secs = 30
+keepalive_timeout_secs = 10
+
+[protocol]
+max_batch_size = 1000
+max_batch_bytes = 1048576
+compression_level_full = 19
+compression_level_delta = 3
+chunk_size_bytes = 1048576
+bloom_filter_fp_rate = 0.01
+sync_timeout_secs = 300
+max_concurrent_syncs = 10
+heartbeat_interval_secs = 60
+heartbeat_missed_threshold = 3
+
+[security]
+tls_cert_path = "/etc/sync-engine/certs/server.crt"
+tls_key_path = "/etc/sync-engine/certs/server.key"
+tls_ca_path = "/etc/sync-engine/certs/ca.crt"
+signing_key_path = "/etc/sync-engine/keys/signing.key"
+signing_key_id = "national-hub-001-key"
+mtls_required = true
+cert_verify_crl = true
+
+[observability]
+metrics_port = 9090
+tracing_service_name = "sync-engine"
+log_level = "info"
+log_format = "json"
+health_check_port = 8082
+
+[recovery]
+max_retries = 10
+base_retry_delay_ms = 1000
+max_retry_delay_ms = 1800000
+jitter_ms = 1000
+checkpoint_interval_events = 10000
+checkpoint_interval_secs = 3600
+replay_batch_size = 1000
+replay_verify_merkle = true
+quarantine_timeout_days = 30
+corruption_check_interval_secs = 86400
+
+[reconciliation]
+default_strategy = "lww"
+auto_resolve = true
+escalation_timeout_hours = 72
+max_manual_conflicts = 1000
+
+[events]
+event_retention_days = 365
+max_event_size_bytes = 1048576
+event_bus_type = "nats"
+publish_own_events = true

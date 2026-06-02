@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  sync-engine:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: inwp-sync-engine
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+      - "50053:50053"
+      - "8080:8080"
+      - "8081:8081"
+      - "9090:9090"
+      - "8082:8082"
+    environment:
+      SYNC_NODE_ID: "00000000-0000-0000-0000-000000000001"
+      SYNC_NODE_NAME: "national-hub-001"
+      SYNC_NODE_TYPE: "national_hub"
+      SYNC_MINISTRY_ID: "00000000-0000-0000-0000-000000000000"
+      SYNC_SITE_ID: "00000000-0000-0000-0000-000000000000"
+      SYNC_REGION: "baghdad"
+      DATABASE_URL: "postgres://sync:sync@postgres:5432/inwp_sync"
+      NATS_URL: "nats://nats:4222"
+      SYNC_TLS_CERT: "/etc/sync-engine/certs/server.crt"
+      SYNC_TLS_KEY: "/etc/sync-engine/certs/server.key"
+      SYNC_TLS_CA: "/etc/sync-engine/certs/ca.crt"
+      SYNC_SIGNING_KEY: "/etc/sync-engine/keys/signing.key"
+      SYNC_SIGNING_KEY_ID: "national-hub-001-key"
+      SYNC_LOG_LEVEL: "info"
+      DB_MAX_CONNECTIONS: "50"
+      RUST_BACKTRACE: "1"
+    volumes:
+      - sync-data:/data/sync-engine
+      - ./certs:/etc/sync-engine/certs:ro
+      - ./keys:/etc/sync-engine/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - inwp-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: inwp-sync-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inwp_sync
+      POSTGRES_USER: sync
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sync-dev-only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sync -d inwp_sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inwp-net
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: inwp-sync-nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--jetstream", "--store_dir=/data/nats", "--http_port=8222"]
+    volumes:
+      - nats-data:/data/nats
+    networks:
+      - inwp-net
+
+volumes:
+  sync-data:
+  postgres-data:
+  nats-data:
+
+networks:
+  inwp-net:
+    driver: bridge

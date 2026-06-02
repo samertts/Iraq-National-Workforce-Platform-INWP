@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  sync-engine:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: inwp-sync-edge
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+      - "50053:50053"
+    environment:
+      SYNC_NODE_ID: "${SYNC_NODE_ID}"
+      SYNC_NODE_NAME: "${SYNC_NODE_NAME}"
+      SYNC_NODE_TYPE: "edge"
+      SYNC_MINISTRY_ID: "${SYNC_MINISTRY_ID}"
+      SYNC_SITE_ID: "${SYNC_SITE_ID}"
+      SYNC_REGION: "${SYNC_REGION}"
+      DATABASE_URL: "postgres://sync:${DB_PASSWORD}@postgres:5432/inwp_sync"
+      NATS_URL: ""
+      SYNC_TLS_CERT: "/etc/sync-engine/certs/server.crt"
+      SYNC_TLS_KEY: "/etc/sync-engine/certs/server.key"
+      SYNC_TLS_CA: "/etc/sync-engine/certs/ca.crt"
+      SYNC_SIGNING_KEY: "/etc/sync-engine/keys/signing.key"
+      SYNC_LOG_LEVEL: "info"
+      SYNC_MDNS_ENABLED: "true"
+      DB_MAX_CONNECTIONS: "10"
+      RUST_BACKTRACE: "1"
+    volumes:
+      - sync-data:/data/sync-engine
+      - ./certs:/etc/sync-engine/certs:ro
+      - ./keys:/etc/sync-engine/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - inwp-net
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inwp_sync
+      POSTGRES_USER: sync
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sync -d inwp_sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inwp-net
+
+volumes:
+  sync-data:
+  postgres-data:
+
+networks:
+  inwp-net:
+    driver: bridge

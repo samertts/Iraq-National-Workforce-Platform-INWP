@@ -1,0 +1,154 @@
+name: Sovereign CI — INWP Governance Pipeline
+
+on:
+  push:
+    branches: [main, develop, release/*]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  governance-check:
+    name: Governance Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Architecture Dependency Analysis
+        run: cargo run --bin sync-engine -- governance analyze-deps
+      - name: Bounded Context Validation
+        run: cargo run --bin sync-engine -- governance validate-contexts
+      - name: Schema Contract Validation
+        run: cargo run --bin sync-engine -- governance validate-schemas
+      - name: Migration Safety Check
+        run: cargo run --bin sync-engine -- governance check-migrations
+      - name: Replay Determinism Check
+        run: cargo run --bin sync-engine -- governance check-replay
+      - name: Federation Boundary Validation
+        run: cargo run --bin sync-engine -- governance validate-boundaries
+      - name: Deployment Policy Check
+        run: cargo run --bin sync-engine -- governance check-deployment-policy
+
+  build-and-test:
+    name: Build & Test
+    needs: governance-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Cargo Deny — Dependency Audit
+        run: cargo install cargo-deny && cargo deny check
+      - name: Cargo Audit — Security Audit
+        run: cargo install cargo-audit && cargo audit
+      - name: Cargo Check — Full Build
+        run: cargo check --workspace
+      - name: Cargo Test
+        run: cargo test --workspace
+      - name: Cargo Clippy — Lint
+        run: cargo clippy -- -D warnings
+
+  supply-chain:
+    name: Supply Chain Verification
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./backend/sync-engine
+      - name: Vulnerability Scan (Grype)
+        uses: anchore/scan-action@v3
+        with:
+          path: ./backend/sync-engine
+      - name: Container Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: ./backend/sync-engine
+
+  deploy-governance:
+    name: Deployment Validation
+    needs: supply-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Terraform Validation
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: Infrastructure Policy Check
+        run: cargo run --bin sync-engine -- governance validate-infra
+      - name: Artifact Signing (Cosign)
+        run: |
+          cargo build --release
+          cosign sign-blob --key env://COSIGN_PRIVATE_KEY \
+            target/release/sync-engine > target/release/sync-engine.sig
+
+  runtime-certification:
+    name: Runtime Certification
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Invariant Verification
+        run: cargo run --bin sync-engine -- verify invariants
+      - name: Replay Determinism Proof
+        run: cargo run --bin sync-engine -- verify replay-determinism
+      - name: Federation Safety Verification
+        run: cargo run --bin sync-engine -- verify federation-safety
+      - name: Runtime Constitution Verification
+        run: cargo run --bin sync-engine -- verify runtime-constitution
+      - name: Survivability Validation
+        run: cargo run --bin sync-engine -- verify survivability
+
+  reproducible-build:
+    name: Reproducible Build
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build Once
+        run: cargo build --release
+        working-directory: ./backend/sync-engine
+      - name: Compute Build Hash
+        run: sha256sum target/release/sync-engine > /tmp/build-hash-v1.txt
+      - name: Rebuild
+        run: cargo clean && cargo build --release
+        working-directory: ./backend/sync-engine
+      - name: Compare Build Hashes
+        run: |
+          sha256sum -c /tmp/build-hash-v1.txt target/release/sync-engine || \
+            (echo "::error::BUILD NOT REPRODUCIBLE — Determinism violation" && exit 1)
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GitLeaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .github/gitleaks.toml
+
+  chaos-validation:
+    name: Chaos Readiness
+    needs: [build-and-test, runtime-certification, reproducible-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Partition Simulation
+        run: cargo run --bin sync-engine -- chaos simulate-partition
+      - name: Byzantine Behavior Simulation
+        run: cargo run --bin sync-engine -- chaos simulate-byzantine
+      - name: Corruption Injection Test
+        run: cargo run --bin sync-engine -- chaos inject-corruption
+      - name: Recovery Stress Test
+        run: cargo run --bin sync-engine -- chaos stress-recovery

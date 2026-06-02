@@ -1,0 +1,46 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /backend/sync-engine
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Africa/Khartoum
+    labels:
+      - dependencies
+      - cargo
+    open-pull-requests-limit: 10
+    reviewers:
+      - inwp/governance-council
+    allow:
+      - dependency-type: direct
+    ignore:
+      - dependency-name: "tonic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prost*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Africa/Khartoum
+    labels:
+      - dependencies
+      - docker
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Africa/Khartoum
+    labels:
+      - dependencies
+      - ci
+    open-pull-requests-limit: 5

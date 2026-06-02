@@ -1,0 +1,309 @@
+syntax = "proto3";
+
+package inwp.sync.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// Node Registry
+// ============================================================================
+
+enum NodeType {
+  NODE_TYPE_UNSPECIFIED = 0;
+  NODE_TYPE_NATIONAL_HUB = 1;
+  NODE_TYPE_REGIONAL_RELAY = 2;
+  NODE_TYPE_EDGE = 3;
+  NODE_TYPE_MOBILE = 4;
+  NODE_TYPE_DR_REPLICA = 5;
+}
+
+enum NodeStatus {
+  NODE_STATUS_UNSPECIFIED = 0;
+  NODE_STATUS_ONLINE = 1;
+  NODE_STATUS_OFFLINE = 2;
+  NODE_STATUS_SUSPECTED = 3;
+  NODE_STATUS_RECOVERING = 4;
+  NODE_STATUS_QUARANTINED = 5;
+}
+
+message NodeIdentity {
+  bytes node_id = 1;
+  NodeType node_type = 2;
+  string node_name = 3;
+  string ministry_id = 4;
+  string site_id = 5;
+  string region = 6;
+  string certificate_serial = 7;
+  bytes public_key = 8;
+  string address = 9;
+  uint32 port = 10;
+  Capabilities capabilities = 11;
+  NodeStatus status = 12;
+  google.protobuf.Timestamp last_heartbeat = 13;
+}
+
+message Capabilities {
+  repeated string schema_versions = 1;
+  repeated string supported_entities = 2;
+  uint32 max_partitions = 3;
+  uint64 max_batch_size_bytes = 4;
+  bool supports_compression = 5;
+  repeated string compression_algorithms = 6;
+  bool supports_lan_mesh = 7;
+}
+
+// ============================================================================
+// Sync Checkpoint
+// ============================================================================
+
+message SyncCheckpoint {
+  bytes node_id = 1;
+  string partition_key = 2;
+  bytes merkle_root = 3;
+  google.protobuf.Timestamp last_sync_at = 4;
+  uint64 synced_events = 5;
+  string last_error = 6;
+}
+
+// ============================================================================
+// Merkle Tree
+// ============================================================================
+
+message MerkleNode {
+  bytes hash = 1;
+  string path = 2;
+  uint32 depth = 3;
+  MerkleNode left = 4;
+  MerkleNode right = 5;
+  bytes record_id = 6; // present only for leaves
+}
+
+message MerkleProof {
+  string partition_key = 1;
+  string record_id = 2;
+  repeated bytes siblings = 3;
+  uint32 index = 4;
+}
+
+message MerkleDiffRequest {
+  string partition_key = 1;
+  bytes remote_merkle_root = 2;
+  repeated string missing_paths = 3;
+  uint32 max_depth = 4;
+}
+
+message MerkleDiffResponse {
+  string partition_key = 1;
+  bytes local_merkle_root = 2;
+  repeated string divergent_records = 3;
+  map<string, bytes> sub_roots = 4;
+  bool complete = 5;
+}
+
+// ============================================================================
+// Sync Batch
+// ============================================================================
+
+message SyncBatch {
+  bytes sync_id = 1;
+  string partition_key = 2;
+  SyncDirection direction = 3;
+  repeated SyncRecord records = 4;
+  uint32 batch_seq = 5;
+  bool is_final = 6;
+  bytes merkle_proof = 7;
+  CompressionInfo compression = 8;
+}
+
+enum SyncDirection {
+  SYNC_DIRECTION_UNSPECIFIED = 0;
+  SYNC_DIRECTION_UPLOAD = 1;
+  SYNC_DIRECTION_DOWNLOAD = 2;
+  SYNC_DIRECTION_BIDIRECTIONAL = 3;
+}
+
+message SyncRecord {
+  string record_id = 1;
+  string record_type = 2;
+  bytes payload = 3;
+  VersionVector version_vector = 4;
+  google.protobuf.Timestamp local_timestamp = 5;
+  bytes signature = 6;
+  RecordOperation operation = 7;
+}
+
+enum RecordOperation {
+  RECORD_OP_UNSPECIFIED = 0;
+  RECORD_OP_CREATE = 1;
+  RECORD_OP_UPDATE = 2;
+  RECORD_OP_DELETE = 3;
+  RECORD_OP_TOMBSTONE = 4;
+}
+
+message VersionVector {
+  map<string, uint64> versions = 1;
+  uint64 local_timestamp = 2;
+}
+
+message CompressionInfo {
+  string algorithm = 1;
+  uint32 level = 2;
+  uint64 original_size = 3;
+  uint64 compressed_size = 4;
+}
+
+// ============================================================================
+// Sync Batch Log (Immutable Receipt)
+// ============================================================================
+
+message SyncBatchReceipt {
+  bytes sync_id = 1;
+  bytes source_node = 2;
+  bytes target_node = 3;
+  string partition_key = 4;
+  SyncDirection direction = 5;
+  uint32 events_count = 6;
+  uint64 bytes_transferred = 7;
+  uint32 conflict_count = 8;
+  uint32 conflicts_auto = 9;
+  uint32 conflicts_manual = 10;
+  bytes local_merkle = 11;
+  bytes remote_merkle = 12;
+  bytes source_signature = 13;
+  bytes target_signature = 14;
+  double compression_ratio = 15;
+  uint64 duration_ms = 16;
+  google.protobuf.Timestamp created_at = 17;
+  string error = 18;
+}
+
+// ============================================================================
+// Conflict
+// ============================================================================
+
+enum ConflictStrategy {
+  CONFLICT_STRATEGY_UNSPECIFIED = 0;
+  CONFLICT_STRATEGY_LWW = 1;
+  CONFLICT_STRATEGY_MINISTRY_AUTHOR = 2;
+  CONFLICT_STRATEGY_SERVICE_MERGE = 3;
+  CONFLICT_STRATEGY_ADDITIVE_MERGE = 4;
+  CONFLICT_STRATEGY_MANUAL = 5;
+}
+
+enum ConflictStatus {
+  CONFLICT_STATUS_UNSPECIFIED = 0;
+  CONFLICT_STATUS_OPEN = 1;
+  CONFLICT_STATUS_AUTO_RESOLVED = 2;
+  CONFLICT_STATUS_MANUAL_RESOLVED = 3;
+  CONFLICT_STATUS_QUARANTINED = 4;
+  CONFLICT_STATUS_ESCALATED = 5;
+}
+
+message SyncConflict {
+  bytes conflict_id = 1;
+  bytes sync_id = 2;
+  string partition_key = 3;
+  string record_id = 4;
+  string record_type = 5;
+  bytes local_version = 6;
+  bytes remote_version = 7;
+  ConflictStrategy strategy = 8;
+  ConflictStatus status = 9;
+  bool auto_resolvable = 10;
+  google.protobuf.Timestamp escalated_at = 11;
+  bytes resolved_by = 12;
+  string resolution = 13;
+  google.protobuf.Timestamp resolved_at = 14;
+  google.protobuf.Timestamp created_at = 15;
+  string merged_payload = 16;
+}
+
+// ============================================================================
+// Sync Session
+// ============================================================================
+
+message SyncSession {
+  bytes session_id = 1;
+  bytes initiator_node = 2;
+  bytes target_node = 3;
+  SyncPhase current_phase = 4;
+  repeated string partitions = 5;
+  SyncMode mode = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp last_activity = 8;
+  uint64 bytes_transferred = 9;
+  uint32 records_synced = 10;
+  string error = 11;
+}
+
+enum SyncPhase {
+  SYNC_PHASE_UNSPECIFIED = 0;
+  SYNC_PHASE_DISCOVERY = 1;
+  SYNC_PHASE_MERKLE_EXCHANGE = 2;
+  SYNC_PHASE_DELTA_TRANSFER = 3;
+  SYNC_PHASE_RECONCILIATION = 4;
+  SYNC_PHASE_COMMITMENT = 5;
+  SYNC_PHASE_COMPLETED = 6;
+  SYNC_PHASE_FAILED = 7;
+}
+
+enum SyncMode {
+  SYNC_MODE_UNSPECIFIED = 0;
+  SYNC_MODE_FULL = 1;
+  SYNC_MODE_DELTA = 2;
+  SYNC_MODE_REPLAY = 3;
+  SYNC_MODE_RECOVERY = 4;
+}
+
+// ============================================================================
+// Sync Queue
+// ============================================================================
+
+message QueueEntry {
+  bytes queue_id = 1;
+  bytes node_id = 2;
+  string partition_key = 3;
+  bytes event_id = 4;
+  string event_type = 5;
+  bytes payload = 6;
+  uint32 priority = 7;
+  string status = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp next_retry_at = 10;
+  uint32 retry_count = 11;
+  string last_error = 12;
+}
+
+// ============================================================================
+// Heartbeat
+// ============================================================================
+
+message Heartbeat {
+  bytes node_id = 1;
+  NodeStatus status = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  map<string, bytes> partition_roots = 4;
+  uint64 queue_depth = 5;
+  uint64 events_pending = 6;
+  double cpu_load = 7;
+  uint64 memory_bytes = 8;
+  uint64 disk_bytes = 9;
+}
+
+// ============================================================================
+// Event Envelope (for NATS event bus)
+// ============================================================================
+
+message SyncEventEnvelope {
+  string event_id = 1;
+  bytes node_id = 2;
+  string event_type = 3;
+  string partition_key = 4;
+  bytes payload = 5;
+  VersionVector version_vector = 6;
+  uint64 local_timestamp = 7;
+  bytes signature = 8;
+  bytes signing_key_id = 9;
+  string schema_version = 10;
+  map<string, string> metadata = 11;
+}

@@ -1,0 +1,108 @@
+[package]
+name = "sync-engine"
+version = "0.1.0"
+edition = "2021"
+description = "INWP Distributed Synchronization Engine — Merkle-tree anti-entropy, CRDT reconciliation, delta sync, event replay"
+authors = ["INWP Engineering"]
+license = "MIT"
+
+[lib]
+name = "sync_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sync-engine"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# gRPC + Protobuf
+tonic = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "1"
+
+# Crypto
+ed25519-dalek = { version = "2", features = ["serde", "pem", "rand_core"] }
+ed25519 = { version = "2", features = ["pkcs8"] }
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+
+# Compression
+zstd = { version = "0.13", features = ["experimental", "zdict_builder"] }
+
+# Networking / Discovery
+mdns-sd = "0.14"
+reqwest = { version = "0.12", features = ["rustls-tls"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.28"
+opentelemetry = { version = "0.27", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.27", features = ["metrics"] }
+opentelemetry-otlp = { version = "0.27", features = ["grpc-tonic"] }
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# Time + UUID
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v7", "serde", "fast-rng"] }
+time = "0.3"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Config
+toml = "0.8"
+dotenvy = "0.15"
+
+# Messaging (NATS for national hub)
+async-nats = "0.38"
+
+# Async trait support
+async-trait = "0.1"
+
+# TLS
+rustls = "0.23"
+rustls-pemfile = "2"
+tokio-rustls = "0.26"
+x509-cert = "0.2"
+
+# Struct iteration
+strum = { version = "0.26", features = ["derive"] }
+
+# Bloom filter for efficient reconciliation
+bloomfilter = "1"
+
+# Semver for schema/migration versioning governance
+semver = "1"
+
+[dev-dependencies]
+tempfile = "3"
+rstest = "0.23"
+mockall = "0.13"
+testcontainers = "0.23"
+
+[build-dependencies]
+tonic-build = "0.12"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = true

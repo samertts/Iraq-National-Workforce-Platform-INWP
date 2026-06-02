@@ -1,0 +1,36 @@
+# Sovereign Governance — INWP Platform
+# Every change requires constitutional governance approval.
+
+# Default governance — sovereign platform stewards
+* @inwp/governance-council
+
+# Core synchronization — Merkle, CRDT, protocol invariants
+/backend/sync-engine/src/core/ @inwp/sync-stewards
+/backend/sync-engine/src/protocol/ @inwp/sync-stewards
+
+# Runtime hardening & deterministic execution
+/backend/sync-engine/src/runtime/ @inwp/runtime-stewards
+
+# Federation & sovereignty boundaries
+/backend/sync-engine/src/federation/ @inwp/federation-stewards
+/backend/sync-engine/src/sovereignty/ @inwp/federation-stewards
+
+# Governance engine — constitution, invariants, policies
+/backend/sync-engine/src/governance/ @inwp/governance-council
+/backend/sync-engine/src/consolidation/ @inwp/governance-council
+
+# Security — signing, mTLS, crypto, audit
+/backend/sync-engine/src/security/ @inwp/security-stewards
+/backend/sync-engine/src/security_governance/ @inwp/security-stewards
+
+# Storage & event store
+/backend/sync-engine/src/storage/ @inwp/data-stewards
+/backend/sync-engine/src/event_store/ @inwp/data-stewards
+
+# Chaos & survivability
+/backend/sync-engine/src/chaos/ @inwp/reliability-stewards
+/backend/sync-engine/src/survivability/ @inwp/reliability-stewards
+
+# CI/CD & deployment
+/.github/ @inwp/governance-council
+/docker/ @inwp/ops-stewards

@@ -1,0 +1,273 @@
+syntax = "proto3";
+
+package inwp.sync.v1;
+
+import "sync.proto";
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// SyncService — gRPC Service for Internal Sync Operations
+// ============================================================================
+
+service SyncService {
+  // Initiate a full 5-phase sync session
+  rpc InitiateSync(stream SyncRequest) returns (stream SyncResponse);
+
+  // Get the merkle root for a partition
+  rpc GetMerkleRoot(MerkleRootRequest) returns (MerkleRootResponse);
+
+  // Get delta records for divergent keys
+  rpc GetDelta(DeltaRequest) returns (stream DeltaResponse);
+
+  // Apply delta records from peer
+  rpc ApplyDelta(stream ApplyDeltaRequest) returns (ApplyDeltaResponse);
+
+  // Resolve a conflict
+  rpc ResolveConflict(ResolveConflictRequest) returns (ResolveConflictResponse);
+
+  // Get sync status
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+
+  // Get node info
+  rpc GetNodeInfo(NodeInfoRequest) returns (NodeIdentity);
+
+  // List peers
+  rpc ListPeers(PeersRequest) returns (PeersResponse);
+
+  // Heartbeat
+  rpc SendHeartbeat(Heartbeat) returns (HeartbeatAck);
+
+  // Initiate replay from checkpoint
+  rpc InitiateReplay(ReplayRequest) returns (stream ReplayEvent);
+
+  // Get recovery state
+  rpc GetRecoveryState(RecoveryStateRequest) returns (RecoveryStateResponse);
+}
+
+// ============================================================================
+// Sync Session Messages
+// ============================================================================
+
+message SyncRequest {
+  oneof phase {
+    DiscoveryRequest discovery = 1;
+    MerkleDiffRequest merkle_diff = 2;
+    DeltaRequest delta = 3;
+    ReconciliationRequest reconciliation = 4;
+    CommitmentRequest commitment = 5;
+  }
+  bytes session_id = 6;
+  uint32 seq = 7;
+}
+
+message SyncResponse {
+  oneof phase {
+    DiscoveryResponse discovery = 1;
+    MerkleDiffResponse merkle_diff = 2;
+    DeltaResponse delta = 3;
+    ReconciliationResponse reconciliation = 4;
+    CommitmentResponse commitment = 5;
+  }
+  bytes session_id = 6;
+  uint32 seq = 7;
+  string error = 8;
+}
+
+// Discovery Phase
+message DiscoveryRequest {
+  NodeIdentity node = 1;
+  repeated string partitions = 2;
+}
+
+message DiscoveryResponse {
+  NodeIdentity node = 1;
+  repeated string partitions = 2;
+  repeated SyncCheckpoint checkpoints = 3;
+  bool accepted = 4;
+  string reject_reason = 5;
+  uint32 suggested_batch_size = 6;
+}
+
+// Delta Transfer
+message DeltaRequest {
+  string partition_key = 1;
+  repeated string record_ids = 2;
+  uint32 offset = 3;
+  uint32 limit = 4;
+  bool include_payload = 5;
+}
+
+message DeltaResponse {
+  string partition_key = 1;
+  repeated SyncRecord records = 2;
+  uint32 total_available = 3;
+  bool has_more = 4;
+  uint32 next_offset = 5;
+}
+
+// Apply Delta
+message ApplyDeltaRequest {
+  string partition_key = 1;
+  SyncBatch batch = 2;
+}
+
+message ApplyDeltaResponse {
+  string partition_key = 1;
+  uint32 applied = 2;
+  uint32 skipped = 3;
+  uint32 conflicts = 4;
+  repeated SyncConflict new_conflicts = 5;
+}
+
+// Reconciliation
+message ReconciliationRequest {
+  string partition_key = 1;
+  repeated SyncConflict resolution_results = 2;
+  bool complete = 3;
+}
+
+message ReconciliationResponse {
+  string partition_key = 1;
+  uint32 resolved = 2;
+  uint32 escalated = 3;
+  repeated SyncConflict new_conflicts = 4;
+}
+
+// Commitment
+message CommitmentRequest {
+  string partition_key = 1;
+  bytes new_merkle_root = 2;
+  bytes signature = 3;
+  uint64 events_count = 4;
+}
+
+message CommitmentResponse {
+  string partition_key = 1;
+  bool accepted = 2;
+  bytes receipt = 3;
+  bytes peer_merkle_root = 4;
+  bytes peer_signature = 5;
+}
+
+// Status
+message MerkleRootRequest {
+  string partition_key = 1;
+}
+
+message MerkleRootResponse {
+  string partition_key = 1;
+  bytes merkle_root = 2;
+  uint64 leaf_count = 3;
+  uint32 tree_height = 4;
+}
+
+message StatusRequest {
+  bool include_partitions = 1;
+  bool include_queue = 2;
+}
+
+message StatusResponse {
+  NodeIdentity node = 1;
+  SyncPhase phase = 2;
+  uint32 active_sessions = 3;
+  uint64 queue_depth = 4;
+  uint64 events_synced_total = 5;
+  uint64 bytes_synced_total = 6;
+  uint32 conflicts_pending = 7;
+  google.protobuf.Timestamp uptime = 8;
+  map<string, SyncCheckpoint> partitions = 9;
+  repeated QueueEntry pending_queue = 10;
+  RecoveryState recovery_state = 11;
+}
+
+message NodeInfoRequest {
+  bytes node_id = 1;
+}
+
+message PeersRequest {
+  NodeType filter_type = 1;
+  string region = 2;
+}
+
+message PeersResponse {
+  repeated NodeIdentity nodes = 1;
+}
+
+message HeartbeatAck {
+  bool accepted = 1;
+  google.protobuf.Timestamp server_time = 2;
+  bool requires_sync = 3;
+  repeated string pending_sync_partitions = 4;
+}
+
+// ============================================================================
+// Replay
+// ============================================================================
+
+message ReplayRequest {
+  bytes source_node = 1;
+  string partition_key = 2;
+  bytes from_checkpoint = 3;
+  bytes to_checkpoint = 4;
+  uint32 batch_size = 5;
+  bool verify_merkle = 6;
+}
+
+message ReplayEvent {
+  uint32 batch_seq = 1;
+  repeated SyncRecord events = 2;
+  bytes merkle_proof = 3;
+  bool is_final = 4;
+  bytes final_merkle_root = 5;
+}
+
+// ============================================================================
+// Recovery
+// ============================================================================
+
+enum RecoveryPhase {
+  RECOVERY_PHASE_UNSPECIFIED = 0;
+  RECOVERY_PHASE_DETECTION = 1;
+  RECOVERY_PHASE_ISOLATION = 2;
+  RECOVERY_PHASE_RECONNECTION = 3;
+  RECOVERY_PHASE_CATCHUP = 4;
+  RECOVERY_PHASE_NORMALIZATION = 5;
+  RECOVERY_PHASE_VERIFICATION = 6;
+  RECOVERY_PHASE_COMPLETE = 7;
+  RECOVERY_PHASE_FAILED = 8;
+}
+
+message RecoveryState {
+  RecoveryPhase phase = 1;
+  google.protobuf.Timestamp started_at = 2;
+  string region = 3;
+  bytes node_id = 4;
+  bool autonomous_mode = 5;
+  uint64 pending_events = 6;
+  uint64 synced_events = 7;
+  uint32 conflict_count = 8;
+  google.protobuf.Timestamp last_reconnect_attempt = 9;
+  uint32 reconnect_attempts = 10;
+  string last_error = 11;
+  RecoveryPhase last_completed_phase = 12;
+}
+
+message RecoveryStateRequest {
+  bytes node_id = 1;
+}
+
+message RecoveryStateResponse {
+  RecoveryState state = 1;
+}
+
+message ResolveConflictRequest {
+  bytes conflict_id = 1;
+  string resolution = 2;
+  bytes resolved_by = 3;
+  string merged_payload = 4;
+}
+
+message ResolveConflictResponse {
+  bool success = 1;
+  string message = 2;
+}
