@@ -42,7 +42,9 @@ impl EdgeContinuityManager {
     }
 
     pub fn replay_since(&self, token: uuid::Uuid) -> Vec<&EdgeContinuityRecord> {
-        let start_idx = self.continuity_log.iter()
+        let start_idx = self
+            .continuity_log
+            .iter()
             .position(|r| r.payload_hash.starts_with(token.as_bytes()))
             .unwrap_or(0);
         self.continuity_log[start_idx..].iter().collect()

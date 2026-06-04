@@ -137,9 +137,18 @@ impl SurvivabilityConstitution {
         Self
     }
 
-    pub fn verify(&self, degradation_tolerance: bool, continuity_checkpoints: bool, isolation_zones: bool, recovery_path: bool) -> SurvivabilityCompliance {
+    pub fn verify(
+        &self,
+        degradation_tolerance: bool,
+        continuity_checkpoints: bool,
+        isolation_zones: bool,
+        recovery_path: bool,
+    ) -> SurvivabilityCompliance {
         SurvivabilityCompliance {
-            compliant: degradation_tolerance && continuity_checkpoints && isolation_zones && recovery_path,
+            compliant: degradation_tolerance
+                && continuity_checkpoints
+                && isolation_zones
+                && recovery_path,
             degradation_tolerance_met: degradation_tolerance,
             continuity_checkpoints_valid: continuity_checkpoints,
             isolation_zones_intact: isolation_zones,
@@ -153,37 +162,132 @@ impl OperationalEscalationEngine {
         Self
     }
 
-    pub fn create_escalation_plan(&self, trigger: EscalationTrigger, severity: ConstitutionSeverity, owner: &str) -> EscalationPlan {
+    pub fn create_escalation_plan(
+        &self,
+        trigger: EscalationTrigger,
+        severity: ConstitutionSeverity,
+        owner: &str,
+    ) -> EscalationPlan {
         let steps = match trigger {
             EscalationTrigger::ConstitutionViolation => vec![
-                EscalationStep { order: 1, action: "Identify violating component".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Isolate violating subsystem".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Engage governance review".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Identify violating component".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Isolate violating subsystem".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Engage governance review".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
             EscalationTrigger::SurvivabilityBreach => vec![
-                EscalationStep { order: 1, action: "Activate continuity checkpoint".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Escalate to degradation coordinator".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Initiate recovery procedure".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Activate continuity checkpoint".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Escalate to degradation coordinator".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Initiate recovery procedure".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
             EscalationTrigger::ResourceExhaustion => vec![
-                EscalationStep { order: 1, action: "Enable overload rejection".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Scale back non-critical operations".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Notify operations center".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Enable overload rejection".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Scale back non-critical operations".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Notify operations center".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
             EscalationTrigger::DeterminismFailure => vec![
-                EscalationStep { order: 1, action: "Halt affected replay sessions".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Capture divergence evidence".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Trigger replay recovery".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Halt affected replay sessions".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Capture divergence evidence".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Trigger replay recovery".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
             EscalationTrigger::GovernanceBypass => vec![
-                EscalationStep { order: 1, action: "Block deployment pipeline".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Revoke bypass credentials".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Conduct forensic audit".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Block deployment pipeline".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Revoke bypass credentials".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Conduct forensic audit".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
             EscalationTrigger::SovereigntyBreach => vec![
-                EscalationStep { order: 1, action: "Isolate sovereignty zone".into(), response: None, completed_at: None },
-                EscalationStep { order: 2, action: "Revoke cross-border agreements".into(), response: None, completed_at: None },
-                EscalationStep { order: 3, action: "Notify national authority".into(), response: None, completed_at: None },
+                EscalationStep {
+                    order: 1,
+                    action: "Isolate sovereignty zone".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 2,
+                    action: "Revoke cross-border agreements".into(),
+                    response: None,
+                    completed_at: None,
+                },
+                EscalationStep {
+                    order: 3,
+                    action: "Notify national authority".into(),
+                    response: None,
+                    completed_at: None,
+                },
             ],
         };
 
@@ -214,7 +318,13 @@ impl SovereignRuntimeCertifier {
         Self
     }
 
-    pub fn certify(&self, version: &semver::Version, constitution: &ConstitutionCompliance, survivability: &SurvivabilityCompliance, escalation_tested: bool) -> SovereignCertification {
+    pub fn certify(
+        &self,
+        version: &semver::Version,
+        constitution: &ConstitutionCompliance,
+        survivability: &SurvivabilityCompliance,
+        escalation_tested: bool,
+    ) -> SovereignCertification {
         let certified = constitution.compliant && survivability.compliant && escalation_tested;
 
         SovereignCertification {

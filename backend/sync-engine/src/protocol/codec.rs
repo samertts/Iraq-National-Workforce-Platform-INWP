@@ -9,7 +9,11 @@ pub struct SyncCodec {
 }
 
 impl SyncCodec {
-    pub fn new(compression_level_full: i32, compression_level_delta: i32, chunk_size: usize) -> Self {
+    pub fn new(
+        compression_level_full: i32,
+        compression_level_delta: i32,
+        chunk_size: usize,
+    ) -> Self {
         Self {
             compression_level_full,
             compression_level_delta,
@@ -30,23 +34,31 @@ impl SyncCodec {
     }
 
     pub fn decompress(&self, data: &[u8]) -> SyncResult<Vec<u8>> {
-        let decompressed = bulk::decompress(data, self.chunk_size * 10)
-            .map_err(|e| SyncEngineError::Compression(format!("zstd decompression error: {}", e)))?;
+        let decompressed = bulk::decompress(data, self.chunk_size * 10).map_err(|e| {
+            SyncEngineError::Compression(format!("zstd decompression error: {}", e))
+        })?;
         Ok(decompressed)
     }
 
     pub fn compress_with_dict(&self, data: &[u8], dict: &[u8]) -> SyncResult<Vec<u8>> {
         let mut compressor = bulk::Compressor::with_dictionary(self.compression_level_delta, dict)
-            .map_err(|e| SyncEngineError::Compression(format!("zstd dict compressor error: {}", e)))?;
-        compressor.compress(data)
-            .map_err(|e| SyncEngineError::Compression(format!("zstd dict compression error: {}", e)))
+            .map_err(|e| {
+                SyncEngineError::Compression(format!("zstd dict compressor error: {}", e))
+            })?;
+        compressor.compress(data).map_err(|e| {
+            SyncEngineError::Compression(format!("zstd dict compression error: {}", e))
+        })
     }
 
     pub fn decompress_with_dict(&self, data: &[u8], dict: &[u8]) -> SyncResult<Vec<u8>> {
-        let mut decompressor = bulk::Decompressor::with_dictionary(dict)
-            .map_err(|e| SyncEngineError::Compression(format!("zstd dict decompressor error: {}", e)))?;
-        decompressor.decompress(data, self.chunk_size * 10)
-            .map_err(|e| SyncEngineError::Compression(format!("zstd dict decompression error: {}", e)))
+        let mut decompressor = bulk::Decompressor::with_dictionary(dict).map_err(|e| {
+            SyncEngineError::Compression(format!("zstd dict decompressor error: {}", e))
+        })?;
+        decompressor
+            .decompress(data, self.chunk_size * 10)
+            .map_err(|e| {
+                SyncEngineError::Compression(format!("zstd dict decompression error: {}", e))
+            })
     }
 
     pub fn ratio(&self, original: usize, compressed: usize) -> f64 {

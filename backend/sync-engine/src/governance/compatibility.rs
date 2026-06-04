@@ -103,15 +103,12 @@ impl CompatibilityValidator {
         self.compatibility_rules.push(rule);
     }
 
-    pub fn analyze(
-        &self,
-        from_schema: &str,
-        to_schema: &str,
-    ) -> CompatibilityReport {
+    pub fn analyze(&self, from_schema: &str, to_schema: &str) -> CompatibilityReport {
         let mut breaking_changes = Vec::new();
         let mut warnings = Vec::new();
 
-        let matching_transforms: Vec<&SchemaTransform> = self.known_transforms
+        let matching_transforms: Vec<&SchemaTransform> = self
+            .known_transforms
             .iter()
             .filter(|t| t.from_schema == from_schema && t.to_schema == to_schema)
             .collect();

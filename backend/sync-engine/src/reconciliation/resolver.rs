@@ -1,6 +1,6 @@
-use crate::core::crdt::{PnCounter, GSet};
-use crate::core::version::VersionVector;
+use crate::core::crdt::{GSet, PnCounter};
 use crate::core::node::NodeIdentity;
+use crate::core::version::VersionVector;
 use crate::error::SyncResult;
 use crate::reconciliation::strategy::{ConflictStrategy, ResolutionMatrix};
 use serde::{Deserialize, Serialize};
@@ -25,16 +25,25 @@ impl Resolver {
         local_node: &NodeIdentity,
         remote_node: &NodeIdentity,
     ) -> SyncResult<Resolution> {
-        let strategy = self.matrix
+        let strategy = self
+            .matrix
             .get_strategy(record_type)
             .cloned()
             .unwrap_or(ConflictStrategy::Lww);
 
         match strategy {
-            ConflictStrategy::Lww => self.resolve_lww(local_payload, remote_payload, local_vv, remote_vv),
-            ConflictStrategy::MinistryAuthor => self.resolve_ministry_author(local_payload, remote_payload, local_node, remote_node),
-            ConflictStrategy::ServiceMerge => self.resolve_service_merge(record_type, local_payload, remote_payload),
-            ConflictStrategy::AdditiveMerge => self.resolve_additive_merge(local_payload, remote_payload),
+            ConflictStrategy::Lww => {
+                self.resolve_lww(local_payload, remote_payload, local_vv, remote_vv)
+            }
+            ConflictStrategy::MinistryAuthor => {
+                self.resolve_ministry_author(local_payload, remote_payload, local_node, remote_node)
+            }
+            ConflictStrategy::ServiceMerge => {
+                self.resolve_service_merge(record_type, local_payload, remote_payload)
+            }
+            ConflictStrategy::AdditiveMerge => {
+                self.resolve_additive_merge(local_payload, remote_payload)
+            }
             ConflictStrategy::Manual => Ok(Resolution::Escalated(ConflictEscalation {
                 record_type: record_type.to_string(),
                 reason: "Manual resolution required by strategy".into(),
@@ -114,7 +123,9 @@ impl Resolver {
                     }
                 }
                 let merged = local_set.merge(&remote_set);
-                let merged_strs: Vec<String> = merged.elements.iter()
+                let merged_strs: Vec<String> = merged
+                    .elements
+                    .iter()
                     .filter_map(|e| String::from_utf8(e.clone()).ok())
                     .collect();
                 Ok(Resolution::Merged(serde_json::to_vec(&merged_strs)?))
@@ -122,11 +133,7 @@ impl Resolver {
         }
     }
 
-    fn resolve_additive_merge(
-        &self,
-        local: &[u8],
-        remote: &[u8],
-    ) -> SyncResult<Resolution> {
+    fn resolve_additive_merge(&self, local: &[u8], remote: &[u8]) -> SyncResult<Resolution> {
         let local_set: GSet = serde_json::from_slice(local).unwrap_or_else(|_| {
             let mut s = GSet::new();
             s.add(local.to_vec());

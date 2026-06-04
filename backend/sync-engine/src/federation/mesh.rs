@@ -66,11 +66,12 @@ impl FederationMesh {
         source: &uuid::Uuid,
         target: &uuid::Uuid,
     ) -> SyncResult<Vec<uuid::Uuid>> {
-        let path = self.topology.shortest_path(source, target)
-            .ok_or_else(|| SyncEngineError::Internal(format!(
+        let path = self.topology.shortest_path(source, target).ok_or_else(|| {
+            SyncEngineError::Internal(format!(
                 "No routing path between domains {} and {}",
                 source, target
-            )))?;
+            ))
+        })?;
         Ok(path)
     }
 
@@ -97,9 +98,15 @@ impl FederationMesh {
         }
 
         let is_allowed = boundary.allow_inbound_schemas.is_empty()
-            || boundary.allow_inbound_schemas.iter().any(|s| event_type.contains(s));
+            || boundary
+                .allow_inbound_schemas
+                .iter()
+                .any(|s| event_type.contains(s));
 
-        let needs_approval = boundary.require_approval_for.iter().any(|s| event_type.contains(s));
+        let needs_approval = boundary
+            .require_approval_for
+            .iter()
+            .any(|s| event_type.contains(s));
 
         is_allowed && !needs_approval
     }

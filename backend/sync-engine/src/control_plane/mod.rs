@@ -206,7 +206,13 @@ impl ControlPlane {
             online_regions: regions.online,
             pending_deployments: self.deployment_queue.read().await.len() as u64,
             active_recoveries: self.recovery_plans.read().await.len() as u64,
-            edge_nodes_online: self.edge_nodes.read().await.values().filter(|n| n.online).count() as u64,
+            edge_nodes_online: self
+                .edge_nodes
+                .read()
+                .await
+                .values()
+                .filter(|n| n.online)
+                .count() as u64,
         }
     }
 

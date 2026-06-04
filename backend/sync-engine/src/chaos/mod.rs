@@ -1,8 +1,8 @@
-pub mod simulator;
-pub mod partition;
-pub mod corruption;
 pub mod byzantine;
+pub mod corruption;
+pub mod partition;
 pub mod recovery_test;
+pub mod simulator;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -106,7 +106,13 @@ impl ChaosEngine {
     }
 
     pub async fn start_experiment(&self, experiment_id: uuid::Uuid) -> Option<SimulationInstance> {
-        let experiment = self.experiments.read().await.iter().find(|e| e.experiment_id == experiment_id)?.clone();
+        let experiment = self
+            .experiments
+            .read()
+            .await
+            .iter()
+            .find(|e| e.experiment_id == experiment_id)?
+            .clone();
 
         let simulation = SimulationInstance {
             simulation_id: uuid::Uuid::now_v7(),
@@ -123,21 +129,23 @@ impl ChaosEngine {
             "Chaos simulation started"
         );
 
-        self.active_simulations.write().await.push(simulation.clone());
+        self.active_simulations
+            .write()
+            .await
+            .push(simulation.clone());
         Some(simulation)
     }
 
-    pub async fn inject_fault(
-        &self,
-        simulation_id: uuid::Uuid,
-        fault_type: ExperimentType,
-    ) {
+    pub async fn inject_fault(&self, simulation_id: uuid::Uuid, fault_type: ExperimentType) {
         let mut sims = self.active_simulations.write().await;
         if let Some(sim) = sims.iter_mut().find(|s| s.simulation_id == simulation_id) {
             sim.status = SimulationStatus::Injecting;
             let mut metrics = HashMap::new();
             metrics.insert("fault_type".into(), fault_type as u64 as f64);
-            metrics.insert("injection_time".into(), chrono::Utc::now().timestamp() as f64);
+            metrics.insert(
+                "injection_time".into(),
+                chrono::Utc::now().timestamp() as f64,
+            );
             sim.metrics = metrics;
             warn!(
                 simulation = %simulation_id,
@@ -176,7 +184,8 @@ impl ChaosEngine {
         let survived = results.iter().filter(|r| r.system_survived).count() as u64;
         let data_ok = results.iter().filter(|r| r.data_integrity_verified).count() as u64;
 
-        let failure_types: Vec<String> = results.iter()
+        let failure_types: Vec<String> = results
+            .iter()
             .filter(|r| !r.passed)
             .flat_map(|r| r.failures.clone())
             .collect();
@@ -186,7 +195,11 @@ impl ChaosEngine {
             passed,
             system_survived: survived,
             data_integrity_verified: data_ok,
-            integrity_score: if total > 0 { (passed + survived + data_ok) as f64 / (total * 3) as f64 } else { 1.0 },
+            integrity_score: if total > 0 {
+                (passed + survived + data_ok) as f64 / (total * 3) as f64
+            } else {
+                1.0
+            },
             failure_patterns: failure_types,
         }
     }

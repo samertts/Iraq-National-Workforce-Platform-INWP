@@ -96,7 +96,10 @@ impl ReplaySimulator {
                     event_index: i,
                     expected_hash: expected_checksum.to_vec(),
                     actual_hash: sim_checksum,
-                    cause: format!("Replay #{} produced divergent checksum — non-determinism detected", i + 1),
+                    cause: format!(
+                        "Replay #{} produced divergent checksum — non-determinism detected",
+                        i + 1
+                    ),
                 });
             }
         }

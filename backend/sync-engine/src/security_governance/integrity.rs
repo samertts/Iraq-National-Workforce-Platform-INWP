@@ -51,7 +51,10 @@ impl IntegrityEngine {
         if tampered {
             details.push("Event chain integrity compromised — tampering detected".into());
         } else {
-            details.push(format!("Event chain intact — {} events verified", hashes.len()));
+            details.push(format!(
+                "Event chain intact — {} events verified",
+                hashes.len()
+            ));
         }
 
         IntegrityVerification {
@@ -65,7 +68,12 @@ impl IntegrityEngine {
         }
     }
 
-    pub fn create_proof(&self, data: &[u8], signature: Vec<u8>, public_key: Vec<u8>) -> CryptographicProof {
+    pub fn create_proof(
+        &self,
+        data: &[u8],
+        signature: Vec<u8>,
+        public_key: Vec<u8>,
+    ) -> CryptographicProof {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash = hasher.finalize().to_vec();

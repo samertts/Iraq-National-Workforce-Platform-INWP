@@ -37,8 +37,13 @@ impl SchemaVersion {
     }
 
     pub fn is_compatible(&self, other: &SchemaVersion) -> bool {
-        self.supported_entities.iter().any(|e| other.supported_entities.contains(e))
-            && self.compression_algorithms.iter().any(|c| other.compression_algorithms.contains(c))
+        self.supported_entities
+            .iter()
+            .any(|e| other.supported_entities.contains(e))
+            && self
+                .compression_algorithms
+                .iter()
+                .any(|c| other.compression_algorithms.contains(c))
     }
 }
 

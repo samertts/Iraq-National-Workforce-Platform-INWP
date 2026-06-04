@@ -15,7 +15,10 @@ impl Default for TamperDetector {
 impl TamperDetector {
     pub fn new() -> Self {
         Self {
-            expected_genesis: Sha256::new().chain_update(b"INWP_GENESIS").finalize().to_vec(),
+            expected_genesis: Sha256::new()
+                .chain_update(b"INWP_GENESIS")
+                .finalize()
+                .to_vec(),
         }
     }
 
@@ -46,8 +49,7 @@ impl TamperDetector {
                     severity: TamperSeverity::Critical,
                     description: format!(
                         "Hash chain broken between depth {} and {}",
-                        window[0].chain_depth,
-                        window[1].chain_depth
+                        window[0].chain_depth, window[1].chain_depth
                     ),
                     affected_depth: window[1].chain_depth,
                 });
@@ -59,7 +61,10 @@ impl TamperDetector {
             if !event.verify_chain_integrity() {
                 issues.push(TamperIssue {
                     severity: TamperSeverity::High,
-                    description: format!("Event integrity check failed at depth {}", event.chain_depth),
+                    description: format!(
+                        "Event integrity check failed at depth {}",
+                        event.chain_depth
+                    ),
                     affected_depth: event.chain_depth,
                 });
             }

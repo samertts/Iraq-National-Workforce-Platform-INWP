@@ -58,7 +58,11 @@ impl DegradationEngine {
         Self
     }
 
-    pub fn assess_degradation(&self, capabilities: Vec<String>, failure_count: u32) -> super::OperationalDegradation {
+    pub fn assess_degradation(
+        &self,
+        capabilities: Vec<String>,
+        failure_count: u32,
+    ) -> super::OperationalDegradation {
         let mode = if failure_count == 0 {
             super::OperationalDegradation::Normal
         } else if failure_count <= 2 {
@@ -81,12 +85,22 @@ impl DegradationEngine {
         mode
     }
 
-    pub fn create_degradation_plan(&self, capabilities: Vec<String>, mode: super::OperationalDegradation) -> DegradationPlan {
+    pub fn create_degradation_plan(
+        &self,
+        capabilities: Vec<String>,
+        mode: super::OperationalDegradation,
+    ) -> DegradationPlan {
         let strategy = match mode {
             super::OperationalDegradation::Normal => PreservationStrategy::MaintainFederation,
-            super::OperationalDegradation::MinorDegradation => PreservationStrategy::PrioritizeSyncOnly,
-            super::OperationalDegradation::MajorDegradation => PreservationStrategy::PreserveAuditLog,
-            super::OperationalDegradation::CriticalDegradation => PreservationStrategy::KeepIdentityOnly,
+            super::OperationalDegradation::MinorDegradation => {
+                PreservationStrategy::PrioritizeSyncOnly
+            }
+            super::OperationalDegradation::MajorDegradation => {
+                PreservationStrategy::PreserveAuditLog
+            }
+            super::OperationalDegradation::CriticalDegradation => {
+                PreservationStrategy::KeepIdentityOnly
+            }
             super::OperationalDegradation::CompleteOutage => PreservationStrategy::MinimalSurvival,
         };
 
@@ -112,7 +126,12 @@ impl ContinuityEngine {
         Self
     }
 
-    pub fn verify_continuity(&self, domain: &str, state_hash: &[u8], checkpoint_hash: &[u8]) -> ContinuityVerification {
+    pub fn verify_continuity(
+        &self,
+        domain: &str,
+        state_hash: &[u8],
+        checkpoint_hash: &[u8],
+    ) -> ContinuityVerification {
         let integrity = state_hash == checkpoint_hash;
         info!(
             domain = %domain,
@@ -135,7 +154,11 @@ impl ReconciliationRecoveryEngine {
         Self
     }
 
-    pub fn create_reconciliation_plan(&self, domains: Vec<String>, strategy: ReconciliationStrategy) -> ReconciliationPlan {
+    pub fn create_reconciliation_plan(
+        &self,
+        domains: Vec<String>,
+        strategy: ReconciliationStrategy,
+    ) -> ReconciliationPlan {
         info!(
             domains = ?domains,
             strategy = ?strategy,
@@ -145,7 +168,10 @@ impl ReconciliationRecoveryEngine {
             plan_id: uuid::Uuid::now_v7(),
             domains,
             reconciliation_strategy: strategy,
-            auto_resolve: matches!(strategy, ReconciliationStrategy::CrdtMerge | ReconciliationStrategy::LastWriterWins),
+            auto_resolve: matches!(
+                strategy,
+                ReconciliationStrategy::CrdtMerge | ReconciliationStrategy::LastWriterWins
+            ),
             verification_required: true,
         }
     }

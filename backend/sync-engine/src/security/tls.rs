@@ -1,5 +1,5 @@
-use crate::error::{SyncEngineError, SyncResult};
 use crate::config::SecurityConfig;
+use crate::error::{SyncEngineError, SyncResult};
 use std::sync::Arc;
 use tokio_rustls::rustls::{self};
 
@@ -40,25 +40,22 @@ impl TlsConfig {
 
         let mut root_store = rustls::RootCertStore::empty();
         for ca_cert in &ca_certs {
-            root_store.add(ca_cert.clone())
+            root_store
+                .add(ca_cert.clone())
                 .map_err(|e| SyncEngineError::Crypto(format!("Failed to add CA cert: {}", e)))?;
         }
 
         let mut server_config = rustls::ServerConfig::builder()
-            .with_client_cert_verifier(
-                if require_mtls {
-                    rustls::server::WebPkiClientVerifier::builder(root_store.clone().into())
-                        .build()
-                        .map_err(|e| SyncEngineError::Crypto(format!("MTLS config error: {}", e)))?
-                } else {
-                    rustls::server::WebPkiClientVerifier::builder(
-                        rustls::RootCertStore::empty().into()
-                    )
+            .with_client_cert_verifier(if require_mtls {
+                rustls::server::WebPkiClientVerifier::builder(root_store.clone().into())
+                    .build()
+                    .map_err(|e| SyncEngineError::Crypto(format!("MTLS config error: {}", e)))?
+            } else {
+                rustls::server::WebPkiClientVerifier::builder(rustls::RootCertStore::empty().into())
                     .allow_unauthenticated()
                     .build()
                     .map_err(|e| SyncEngineError::Crypto(format!("TLS config error: {}", e)))?
-                }
-            )
+            })
             .with_single_cert(certs.clone(), key.clone_key())
             .map_err(|e| SyncEngineError::Crypto(format!("Server cert error: {}", e)))?;
 

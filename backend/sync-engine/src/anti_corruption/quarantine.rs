@@ -35,7 +35,11 @@ impl CorruptionQuarantine {
     }
 
     pub fn resolve(&mut self, event_id: &uuid::Uuid) -> Option<CorruptionEvent> {
-        if let Some(pos) = self.quarantined_events.iter().position(|e| e.event_id == *event_id) {
+        if let Some(pos) = self
+            .quarantined_events
+            .iter()
+            .position(|e| e.event_id == *event_id)
+        {
             let mut event = self.quarantined_events.remove(pos)?;
             event.resolved = true;
             info!(event_id = %event_id, "Corruption event resolved");
@@ -50,13 +54,15 @@ impl CorruptionQuarantine {
     }
 
     pub fn pending_investigations(&self) -> Vec<&CorruptionEvent> {
-        self.quarantined_events.iter()
+        self.quarantined_events
+            .iter()
             .filter(|e| !e.resolved)
             .collect()
     }
 
     pub fn auto_resolve_stale(&mut self) -> u32 {
-        let cutoff = chrono::Utc::now() - chrono::Duration::hours(self.auto_resolve_after_hours as i64);
+        let cutoff =
+            chrono::Utc::now() - chrono::Duration::hours(self.auto_resolve_after_hours as i64);
         let mut resolved = 0;
 
         self.quarantined_events.retain(|e| {

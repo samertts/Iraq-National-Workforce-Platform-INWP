@@ -88,7 +88,11 @@ impl OperationalSecurityEngine {
             0.5
         };
 
-        info!(score, factors = factors.len(), "Infrastructure trust score computed");
+        info!(
+            score,
+            factors = factors.len(),
+            "Infrastructure trust score computed"
+        );
 
         InfrastructureTrustScore {
             domain: String::new(),
@@ -98,7 +102,11 @@ impl OperationalSecurityEngine {
         }
     }
 
-    pub fn conduct_forensic_analysis(&self, target: &str, events: Vec<ForensicEvent>) -> ForensicAnalysis {
+    pub fn conduct_forensic_analysis(
+        &self,
+        target: &str,
+        events: Vec<ForensicEvent>,
+    ) -> ForensicAnalysis {
         let mut findings = Vec::new();
         let custody: Vec<Vec<u8>> = events.iter().map(|e| e.hash.clone()).collect();
 
@@ -106,7 +114,10 @@ impl OperationalSecurityEngine {
             if event.hash.is_empty() {
                 findings.push(ForensicFinding {
                     severity: ForensicSeverity::High,
-                    description: format!("Missing hash for event '{}' from '{}'", event.event_type, event.source),
+                    description: format!(
+                        "Missing hash for event '{}' from '{}'",
+                        event.event_type, event.source
+                    ),
                     evidence: vec![format!("Event timestamp: {}", event.timestamp)],
                     remediation: "All forensic events must carry cryptographic hashes".into(),
                 });
@@ -128,7 +139,13 @@ impl ReplayIntegrityEngine {
         Self
     }
 
-    pub fn verify_integrity(&self, stream_id: &str, checksum: &[u8], expected: &[u8], event_count: u64) -> ReplayIntegrityReport {
+    pub fn verify_integrity(
+        &self,
+        stream_id: &str,
+        checksum: &[u8],
+        expected: &[u8],
+        event_count: u64,
+    ) -> ReplayIntegrityReport {
         let checksum_match = checksum == expected;
         let tamper = !checksum_match;
 
@@ -148,7 +165,11 @@ impl GovernanceIntegrityEngine {
         Self
     }
 
-    pub fn verify_governance_integrity(&self, policy_count: u64, audit_hashes: &[Vec<u8>]) -> GovernanceIntegrityReport {
+    pub fn verify_governance_integrity(
+        &self,
+        policy_count: u64,
+        audit_hashes: &[Vec<u8>],
+    ) -> GovernanceIntegrityReport {
         let mut violations = Vec::new();
         for window in audit_hashes.windows(2) {
             if window[0] != window[1] {

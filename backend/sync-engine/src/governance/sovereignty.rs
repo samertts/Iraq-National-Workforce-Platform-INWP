@@ -108,7 +108,10 @@ impl SovereigntyRegistry {
     pub fn register_zone(&mut self, zone: SovereigntyZone) {
         let id = zone.zone_id.clone();
         if let Some(parent) = &zone.parent_zone {
-            self.zone_hierarchy.entry(parent.clone()).or_default().push(id.clone());
+            self.zone_hierarchy
+                .entry(parent.clone())
+                .or_default()
+                .push(id.clone());
         }
         info!(zone = %id, kind = ?zone.zone_type, "Sovereignty zone registered");
         self.zones.insert(id, zone);
@@ -140,18 +143,20 @@ impl SovereigntyRegistry {
     pub fn check_residency(&self, zone_id: &str, allowed_regions: &[String]) -> PolicyEvalResult {
         let zone = match self.zones.get(zone_id) {
             Some(z) => z,
-            None => return PolicyEvalResult::Violation(GovernanceViolation {
-                policy_id: uuid::Uuid::nil(),
-                policy_name: "SovereigntyResidency".into(),
-                severity: PolicySeverity::Critical,
-                message: format!("Sovereignty zone '{}' not registered", zone_id),
-                context: {
-                    let mut m = HashMap::new();
-                    m.insert("zone_id".into(), zone_id.into());
-                    m
-                },
-                remediations: vec![format!("Register sovereignty zone '{}'", zone_id)],
-            }),
+            None => {
+                return PolicyEvalResult::Violation(GovernanceViolation {
+                    policy_id: uuid::Uuid::nil(),
+                    policy_name: "SovereigntyResidency".into(),
+                    severity: PolicySeverity::Critical,
+                    message: format!("Sovereignty zone '{}' not registered", zone_id),
+                    context: {
+                        let mut m = HashMap::new();
+                        m.insert("zone_id".into(), zone_id.into());
+                        m
+                    },
+                    remediations: vec![format!("Register sovereignty zone '{}'", zone_id)],
+                })
+            }
         };
 
         for region in allowed_regions {
@@ -191,15 +196,20 @@ impl SovereigntyRegistry {
         let mut checks_failed = 0;
 
         let zone = self.zones.get(zone_id);
-        let applicable_policies: Vec<&ResidencyPolicy> = self.residency_policies
+        let applicable_policies: Vec<&ResidencyPolicy> = self
+            .residency_policies
             .iter()
             .filter(|p| p.data_classification == classification)
             .collect();
 
         for policy in &applicable_policies {
             let in_allowed = policy.allowed_zones.is_empty()
-                || zone.map(|z| policy.allowed_zones.contains(&z.zone_id)).unwrap_or(false);
-            let in_forbidden = zone.map(|z| policy.forbidden_zones.contains(&z.zone_id)).unwrap_or(false);
+                || zone
+                    .map(|z| policy.allowed_zones.contains(&z.zone_id))
+                    .unwrap_or(false);
+            let in_forbidden = zone
+                .map(|z| policy.forbidden_zones.contains(&z.zone_id))
+                .unwrap_or(false);
 
             if in_forbidden {
                 violations.push(format!(
@@ -243,7 +253,8 @@ impl SovereigntyRegistry {
         self.zone_hierarchy
             .get(parent_id)
             .map(|children| {
-                children.iter()
+                children
+                    .iter()
                     .filter_map(|id| self.zones.get(id))
                     .collect()
             })
@@ -257,7 +268,11 @@ impl SovereigntyRegistry {
     ) -> PolicyEvalResult {
         for policy in &self.partition_policies {
             if policy.partition_key == partition_key {
-                if !policy.allowed_replication_targets.iter().any(|t| t == target_domain) {
+                if !policy
+                    .allowed_replication_targets
+                    .iter()
+                    .any(|t| t == target_domain)
+                {
                     return PolicyEvalResult::Violation(GovernanceViolation {
                         policy_id: uuid::Uuid::nil(),
                         policy_name: "SovereigntyResidency".into(),

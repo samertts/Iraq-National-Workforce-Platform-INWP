@@ -72,12 +72,11 @@ impl BatchLogRepo {
     }
 
     pub async fn count_by_partition(&self, partition_key: &str) -> SyncResult<i64> {
-        let row: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM sync.sync_batch_log WHERE partition_key = $1",
-        )
-        .bind(partition_key)
-        .fetch_one(&self.pool)
-        .await?;
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM sync.sync_batch_log WHERE partition_key = $1")
+                .bind(partition_key)
+                .fetch_one(&self.pool)
+                .await?;
         Ok(row.0)
     }
 }
@@ -111,7 +110,12 @@ impl TryFrom<BatchLogRow> for BatchReceipt {
             "upload" => SyncDirection::Upload,
             "download" => SyncDirection::Download,
             "bidirectional" => SyncDirection::Bidirectional,
-            _ => return Err(Self::Error::Internal(format!("Unknown direction: {}", row.direction))),
+            _ => {
+                return Err(Self::Error::Internal(format!(
+                    "Unknown direction: {}",
+                    row.direction
+                )))
+            }
         };
 
         Ok(BatchReceipt {

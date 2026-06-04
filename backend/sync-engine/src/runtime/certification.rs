@@ -98,7 +98,13 @@ impl CertificationEngine {
         Self
     }
 
-    pub fn issue_certification(&self, cert_type: CertificationType, domain: &str, version: &semver::Version, passed: bool) -> Certification {
+    pub fn issue_certification(
+        &self,
+        cert_type: CertificationType,
+        domain: &str,
+        version: &semver::Version,
+        passed: bool,
+    ) -> Certification {
         info!(
             kind = ?cert_type,
             domain = %domain,
@@ -115,7 +121,12 @@ impl CertificationEngine {
             issued_at: chrono::Utc::now(),
             valid_until: chrono::Utc::now() + chrono::Duration::days(365),
             passed,
-            evidence: vec![format!("{:?} certification {} for '{}'", cert_type, if passed { "PASSED" } else { "FAILED" }, domain)],
+            evidence: vec![format!(
+                "{:?} certification {} for '{}'",
+                cert_type,
+                if passed { "PASSED" } else { "FAILED" },
+                domain
+            )],
             issued_by: "INWP Sovereign Certification Authority".into(),
         }
     }
@@ -126,7 +137,13 @@ impl ReplayCertifier {
         Self
     }
 
-    pub fn certify(&self, stream_id: &str, deterministic: bool, checksum_ok: bool, replay_count: u64) -> ReplayCertification {
+    pub fn certify(
+        &self,
+        stream_id: &str,
+        deterministic: bool,
+        checksum_ok: bool,
+        replay_count: u64,
+    ) -> ReplayCertification {
         let certified = deterministic && checksum_ok;
         ReplayCertification {
             cert_id: uuid::Uuid::now_v7(),
@@ -145,7 +162,11 @@ impl SurvivabilityCertifier {
     }
 
     pub fn certify(&self, domain: &str, passed: u32, total: u32) -> SurvivabilityCertification {
-        let rate = if total > 0 { passed as f64 / total as f64 } else { 0.0 };
+        let rate = if total > 0 {
+            passed as f64 / total as f64
+        } else {
+            0.0
+        };
         SurvivabilityCertification {
             cert_id: uuid::Uuid::now_v7(),
             domain: domain.to_string(),
@@ -162,7 +183,13 @@ impl DegradationCertifier {
         Self
     }
 
-    pub fn certify(&self, domain: &str, level: &str, graceful: bool, recovery: bool) -> DegradationCertification {
+    pub fn certify(
+        &self,
+        domain: &str,
+        level: &str,
+        graceful: bool,
+        recovery: bool,
+    ) -> DegradationCertification {
         DegradationCertification {
             cert_id: uuid::Uuid::now_v7(),
             domain: domain.to_string(),
@@ -179,7 +206,13 @@ impl SovereigntyCertifier {
         Self
     }
 
-    pub fn certify(&self, zone_id: &str, isolated: bool, compliant: bool, audit_intact: bool) -> SovereigntyCertification {
+    pub fn certify(
+        &self,
+        zone_id: &str,
+        isolated: bool,
+        compliant: bool,
+        audit_intact: bool,
+    ) -> SovereigntyCertification {
         SovereigntyCertification {
             cert_id: uuid::Uuid::now_v7(),
             zone_id: zone_id.to_string(),

@@ -101,9 +101,20 @@ impl EvolutionEngine {
         }
     }
 
-    pub fn plan_transition(&self, from: &ArchitectureEpoch, to: &ArchitectureEpoch, transition_type: TransitionType) -> EpochTransition {
-        let migrations = if matches!(transition_type, TransitionType::BreakingChange | TransitionType::MajorEvolution) {
-            vec![format!("Migrate from epoch '{}' to '{}'", from.name, to.name)]
+    pub fn plan_transition(
+        &self,
+        from: &ArchitectureEpoch,
+        to: &ArchitectureEpoch,
+        transition_type: TransitionType,
+    ) -> EpochTransition {
+        let migrations = if matches!(
+            transition_type,
+            TransitionType::BreakingChange | TransitionType::MajorEvolution
+        ) {
+            vec![format!(
+                "Migrate from epoch '{}' to '{}'",
+                from.name, to.name
+            )]
         } else {
             vec![]
         };
@@ -134,11 +145,7 @@ impl CompatibilityEngine {
         Self
     }
 
-    pub fn create_guarantee(
-        &self,
-        contract_id: &str,
-        years: u64,
-    ) -> CompatibilityGuarantee {
+    pub fn create_guarantee(&self, contract_id: &str, years: u64) -> CompatibilityGuarantee {
         let until = chrono::Utc::now() + chrono::Duration::days((years * 365) as i64);
         info!(
             contract = %contract_id,
@@ -166,8 +173,12 @@ impl EpochManager {
     }
 
     pub fn assess_epoch_state(&self, epochs: &[ArchitectureEpoch]) -> EpochState {
-        let active: Vec<&ArchitectureEpoch> = epochs.iter().filter(|e| e.ended_at.is_none()).collect();
-        let current = active.last().map(|e| e.epoch_id).unwrap_or(uuid::Uuid::nil());
+        let active: Vec<&ArchitectureEpoch> =
+            epochs.iter().filter(|e| e.ended_at.is_none()).collect();
+        let current = active
+            .last()
+            .map(|e| e.epoch_id)
+            .unwrap_or(uuid::Uuid::nil());
         let has_planned = active.len() > 1;
 
         EpochState {

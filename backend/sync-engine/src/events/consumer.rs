@@ -2,7 +2,7 @@ use crate::error::{SyncEngineError, SyncResult};
 use crate::events::contract::SyncEvent;
 use async_nats::jetstream;
 use futures::{StreamExt, TryStreamExt};
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 pub struct EventConsumer {
     node_id: uuid::Uuid,
@@ -25,7 +25,10 @@ impl EventConsumer {
         subjects: &[String],
     ) -> SyncResult<()> {
         let subject = subjects.join("|");
-        let sub = client.subscribe(subject).await.map_err(|e| SyncEngineError::Nats(e.into()))?;
+        let sub = client
+            .subscribe(subject)
+            .await
+            .map_err(|e| SyncEngineError::Nats(e.into()))?;
         self.subscription = Some(sub);
         info!(subjects = ?subjects, "Subscribed to sync events");
         Ok(())
@@ -67,8 +70,12 @@ impl EventConsumer {
         }
 
         if let Some(ref consumer) = self.jetstream_consumer {
-                if let Ok(mut messages) = consumer.messages().await {
-                if let Some(msg_result) = messages.try_next().await.map_err(|e| SyncEngineError::Nats(Box::new(e)))? {
+            if let Ok(mut messages) = consumer.messages().await {
+                if let Some(msg_result) = messages
+                    .try_next()
+                    .await
+                    .map_err(|e| SyncEngineError::Nats(Box::new(e)))?
+                {
                     let event: SyncEvent = serde_json::from_slice(&msg_result.payload)?;
                     msg_result.ack().await.map_err(SyncEngineError::Nats)?;
                     return Ok(Some(event));

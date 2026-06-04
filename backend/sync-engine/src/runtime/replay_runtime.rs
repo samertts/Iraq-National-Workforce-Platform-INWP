@@ -97,7 +97,8 @@ impl ReplayRuntime {
             "Replay session started"
         );
 
-        self.active_sessions.insert(session.session_id, session.clone());
+        self.active_sessions
+            .insert(session.session_id, session.clone());
         Some(session)
     }
 
@@ -110,8 +111,13 @@ impl ReplayRuntime {
 
     pub fn complete_session(&mut self, session_id: uuid::Uuid, success: bool) {
         if let Some(session) = self.active_sessions.get_mut(&session_id) {
-            session.status = if success { ReplaySessionStatus::Completed } else { ReplaySessionStatus::Failed };
-            session.resource_accounting.duration_ms = (chrono::Utc::now() - session.started_at).num_milliseconds() as u64;
+            session.status = if success {
+                ReplaySessionStatus::Completed
+            } else {
+                ReplaySessionStatus::Failed
+            };
+            session.resource_accounting.duration_ms =
+                (chrono::Utc::now() - session.started_at).num_milliseconds() as u64;
             info!(
                 session = %session_id,
                 success,
@@ -152,13 +158,22 @@ impl ReplayResourceEnforcer {
     pub fn enforce_budget(account: &ResourceAccount, budget: &ReplayBudget) -> Vec<String> {
         let mut violations = Vec::new();
         if account.events_processed > budget.max_events_per_session {
-            violations.push(format!("Events processed ({}) exceeds budget ({})", account.events_processed, budget.max_events_per_session));
+            violations.push(format!(
+                "Events processed ({}) exceeds budget ({})",
+                account.events_processed, budget.max_events_per_session
+            ));
         }
         if account.memory_used_bytes > budget.max_memory_per_session {
-            violations.push(format!("Memory used ({} bytes) exceeds budget ({} bytes)", account.memory_used_bytes, budget.max_memory_per_session));
+            violations.push(format!(
+                "Memory used ({} bytes) exceeds budget ({} bytes)",
+                account.memory_used_bytes, budget.max_memory_per_session
+            ));
         }
         if account.duration_ms > budget.max_duration_per_session {
-            violations.push(format!("Duration ({}ms) exceeds budget ({}ms)", account.duration_ms, budget.max_duration_per_session));
+            violations.push(format!(
+                "Duration ({}ms) exceeds budget ({}ms)",
+                account.duration_ms, budget.max_duration_per_session
+            ));
         }
         violations
     }

@@ -86,8 +86,13 @@ impl OperationsEngine {
         Self
     }
 
-    pub fn create_routing_table(&self, domain: &str, peers: Vec<(&str, SovereignRouteType, u32)>) -> SovereignRoutingTable {
-        let routes: Vec<SovereignRoute> = peers.into_iter()
+    pub fn create_routing_table(
+        &self,
+        domain: &str,
+        peers: Vec<(&str, SovereignRouteType, u32)>,
+    ) -> SovereignRoutingTable {
+        let routes: Vec<SovereignRoute> = peers
+            .into_iter()
             .map(|(target, rtype, priority)| SovereignRoute {
                 route_id: uuid::Uuid::now_v7(),
                 source: domain.to_string(),
@@ -112,7 +117,12 @@ impl OperationsEngine {
         }
     }
 
-    pub fn compute_replay_aware_route(&self, source: &str, target: &str, pending_replays: u64) -> SovereignRoute {
+    pub fn compute_replay_aware_route(
+        &self,
+        source: &str,
+        target: &str,
+        pending_replays: u64,
+    ) -> SovereignRoute {
         let route_type = if pending_replays > 100 {
             SovereignRouteType::SovereignBackbone
         } else if pending_replays > 10 {
@@ -137,7 +147,12 @@ impl BlastRadiusIsolator {
         Self
     }
 
-    pub fn isolate(&self, incident: &str, all_domains: &[String], dependency_map: &HashMap<String, Vec<String>>) -> BlastRadius {
+    pub fn isolate(
+        &self,
+        incident: &str,
+        all_domains: &[String],
+        dependency_map: &HashMap<String, Vec<String>>,
+    ) -> BlastRadius {
         let mut affected = vec![incident.to_string()];
         let mut boundary = Vec::new();
 
@@ -178,7 +193,11 @@ impl RegionalAutonomyEngine {
         Self
     }
 
-    pub fn create_autonomy_plan(&self, region: &str, connectivity_status: RegionalAutonomyLevel) -> RegionalAutonomyPlan {
+    pub fn create_autonomy_plan(
+        &self,
+        region: &str,
+        connectivity_status: RegionalAutonomyLevel,
+    ) -> RegionalAutonomyPlan {
         let (checkpoint_interval, max_offline) = match connectivity_status {
             RegionalAutonomyLevel::FullyConnected => (300, 0),
             RegionalAutonomyLevel::LimitedConnectivity => (60, 3600),
@@ -209,10 +228,18 @@ impl DegradationCoordinator {
         Self
     }
 
-    pub fn coordinate_degradation(&self, regions: Vec<String>, level: RegionalAutonomyLevel) -> DegradationCoordinationPlan {
+    pub fn coordinate_degradation(
+        &self,
+        regions: Vec<String>,
+        level: RegionalAutonomyLevel,
+    ) -> DegradationCoordinationPlan {
         let strategy = match level {
-            RegionalAutonomyLevel::FullyConnected => DegradationStrategy::MaintainFederationBackbone,
-            RegionalAutonomyLevel::LimitedConnectivity => DegradationStrategy::PrioritizeCriticalDomains,
+            RegionalAutonomyLevel::FullyConnected => {
+                DegradationStrategy::MaintainFederationBackbone
+            }
+            RegionalAutonomyLevel::LimitedConnectivity => {
+                DegradationStrategy::PrioritizeCriticalDomains
+            }
             RegionalAutonomyLevel::Autonomous => DegradationStrategy::IsolateAndContain,
             RegionalAutonomyLevel::SovereignIsolation => DegradationStrategy::IsolateAndContain,
             RegionalAutonomyLevel::EmergencyAutonomy => DegradationStrategy::GracefulDegradation,

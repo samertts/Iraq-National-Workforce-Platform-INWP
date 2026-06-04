@@ -32,7 +32,9 @@ pub struct QuarantineManager {
 
 impl QuarantineManager {
     pub fn new(max_quarantine_days: u32) -> Self {
-        Self { max_quarantine_days }
+        Self {
+            max_quarantine_days,
+        }
     }
 
     pub fn is_expired(&self, entry: &QuarantineEntry) -> bool {

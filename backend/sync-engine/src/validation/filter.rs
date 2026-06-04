@@ -1,4 +1,3 @@
-
 pub struct EventFilter {
     allowed_event_types: Vec<String>,
     allowed_partitions: Vec<String>,
@@ -16,7 +15,10 @@ impl EventFilter {
         let type_match = self.allowed_event_types.is_empty()
             || self.allowed_event_types.iter().any(|t| t == event_type);
         let partition_match = self.allowed_partitions.is_empty()
-            || self.allowed_partitions.iter().any(|p| partition_key.starts_with(p));
+            || self
+                .allowed_partitions
+                .iter()
+                .any(|p| partition_key.starts_with(p));
 
         type_match && partition_match
     }

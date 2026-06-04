@@ -66,24 +66,26 @@ impl DependencyAnalyzer {
             return;
         }
 
-        let src = self.nodes.entry(source_name.clone()).or_insert_with(|| {
-            DependencyNode {
+        let src = self
+            .nodes
+            .entry(source_name.clone())
+            .or_insert_with(|| DependencyNode {
                 name: source_name.clone(),
                 dependencies: HashSet::new(),
                 dependents: HashSet::new(),
                 metadata: HashMap::new(),
-            }
-        });
+            });
         src.dependencies.insert(target_name.clone());
 
-        let tgt = self.nodes.entry(target_name.clone()).or_insert_with(|| {
-            DependencyNode {
+        let tgt = self
+            .nodes
+            .entry(target_name.clone())
+            .or_insert_with(|| DependencyNode {
                 name: target_name.clone(),
                 dependencies: HashSet::new(),
                 dependents: HashSet::new(),
                 metadata: HashMap::new(),
-            }
-        });
+            });
         tgt.dependents.insert(source_name);
     }
 
@@ -100,10 +102,14 @@ impl DependencyAnalyzer {
     }
 
     pub fn analyze_coupling(&self, component: &str) -> CouplingReport {
-        let efferent = self.nodes.get(component)
+        let efferent = self
+            .nodes
+            .get(component)
             .map(|n| n.dependencies.len())
             .unwrap_or(0);
-        let afferent = self.nodes.get(component)
+        let afferent = self
+            .nodes
+            .get(component)
             .map(|n| n.dependents.len())
             .unwrap_or(0);
 
@@ -174,7 +180,10 @@ impl DependencyAnalyzer {
         self.analysis_timestamp = Some(chrono::Utc::now());
 
         if !cycles.is_empty() {
-            info!(count = cycles.len(), "Dependency cycles detected in architecture");
+            info!(
+                count = cycles.len(),
+                "Dependency cycles detected in architecture"
+            );
             for cycle in &cycles {
                 info!(length = cycle.length, nodes = ?cycle.nodes, "Cycle detected");
             }
@@ -243,7 +252,11 @@ impl DependencyAnalyzer {
 
         ImpactAnalysis {
             changed_component: changed_component.to_string(),
-            directly_affected: affected.iter().filter(|c| *c != changed_component).cloned().collect(),
+            directly_affected: affected
+                .iter()
+                .filter(|c| *c != changed_component)
+                .cloned()
+                .collect(),
             transitive_dependencies: transitive,
             total_affected: affected.len(),
         }

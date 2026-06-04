@@ -1,4 +1,4 @@
-use crate::core::merkle::{MerkleTree, compute_record_hash};
+use crate::core::merkle::{compute_record_hash, MerkleTree};
 use crate::error::SyncResult;
 use sha2::{Digest, Sha256};
 use tracing::warn;

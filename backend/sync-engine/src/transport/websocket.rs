@@ -19,7 +19,10 @@ impl WebSocketServer {
         loop {
             let (stream, peer) = listener.accept().await?;
             tokio::spawn(async move {
-                info!("TCP connection from {} (WebSocket upgrade not yet implemented)", peer);
+                info!(
+                    "TCP connection from {} (WebSocket upgrade not yet implemented)",
+                    peer
+                );
                 drop(stream);
             });
         }

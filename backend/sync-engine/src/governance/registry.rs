@@ -99,7 +99,8 @@ impl ArchitectureRegistry {
 
     pub fn register_context(&mut self, context: BoundedContext) {
         let name = context.name.clone();
-        self.ownership_registry.insert(name.clone(), context.owner.clone());
+        self.ownership_registry
+            .insert(name.clone(), context.owner.clone());
         self.contexts.insert(name.clone(), context);
         info!(context = %name, "Bounded context registered in architecture registry");
     }
@@ -136,9 +137,15 @@ impl ArchitectureRegistry {
                         policy_id: uuid::Uuid::nil(),
                         policy_name: "RequiredInterface".into(),
                         severity: super::PolicySeverity::Error,
-                        message: format!("Context '{}' missing required interface '{}'", context_name, interface),
+                        message: format!(
+                            "Context '{}' missing required interface '{}'",
+                            context_name, interface
+                        ),
                         context: std::collections::HashMap::new(),
-                        remediations: vec![format!("Implement interface '{}' on context '{}'", interface, context_name)],
+                        remediations: vec![format!(
+                            "Implement interface '{}' on context '{}'",
+                            interface, context_name
+                        )],
                     })
                 }
             }
@@ -146,9 +153,15 @@ impl ArchitectureRegistry {
                 policy_id: uuid::Uuid::nil(),
                 policy_name: "RequiredInterface".into(),
                 severity: super::PolicySeverity::Critical,
-                message: format!("Context '{}' not found in architecture registry", context_name),
+                message: format!(
+                    "Context '{}' not found in architecture registry",
+                    context_name
+                ),
                 context: std::collections::HashMap::new(),
-                remediations: vec![format!("Register context '{}' in architecture registry", context_name)],
+                remediations: vec![format!(
+                    "Register context '{}' in architecture registry",
+                    context_name
+                )],
             }),
         }
     }
@@ -173,7 +186,10 @@ impl ArchitectureRegistry {
         if let Some(ctx) = self.contexts.get(name) {
             for dep in &ctx.allowed_dependencies {
                 if !self.contexts.contains_key(dep) {
-                    analysis.violations.push(format!("Allowed dependency '{}' is not a registered context", dep));
+                    analysis.violations.push(format!(
+                        "Allowed dependency '{}' is not a registered context",
+                        dep
+                    ));
                 }
             }
             if let Some(maps) = self.context_maps.get(name) {

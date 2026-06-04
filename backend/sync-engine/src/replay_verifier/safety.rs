@@ -1,6 +1,6 @@
 use crate::error::{SyncEngineError, SyncResult};
-use crate::events::contract::SyncEvent;
 use crate::event_store::chain::EventChain;
+use crate::events::contract::SyncEvent;
 use tracing::info;
 
 pub struct ReplaySafetyGuard {
@@ -19,7 +19,10 @@ impl ReplaySafetyGuard {
     }
 
     pub fn authorize_replay(&mut self, partition_key: &str) -> SyncResult<ReplayAuthorization> {
-        let attempts = self.replay_attempts.entry(partition_key.to_string()).or_insert(0);
+        let attempts = self
+            .replay_attempts
+            .entry(partition_key.to_string())
+            .or_insert(0);
         *attempts += 1;
 
         if *attempts > self.max_replay_attempts {
@@ -43,11 +46,7 @@ impl ReplaySafetyGuard {
         })
     }
 
-    pub fn verify_replay_safety(
-        &self,
-        chain: &EventChain,
-        events: &[SyncEvent],
-    ) -> SyncResult<()> {
+    pub fn verify_replay_safety(&self, chain: &EventChain, events: &[SyncEvent]) -> SyncResult<()> {
         // 1. Chain must not be sealed during replay
         if chain.sealed {
             return Err(SyncEngineError::Recovery(

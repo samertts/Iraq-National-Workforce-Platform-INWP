@@ -41,7 +41,8 @@ impl FederationRouter {
     }
 
     pub fn find_downstream(&self, domain_id: &uuid::Uuid) -> Vec<&FederationDomain> {
-        self.domains.values()
+        self.domains
+            .values()
             .filter(|d| d.parent_domain.as_ref() == Some(domain_id))
             .collect()
     }
@@ -57,7 +58,8 @@ impl FederationRouter {
             None => return Vec::new(),
         };
 
-        self.domains.values()
+        self.domains
+            .values()
             .filter(|d| d.parent_domain.as_ref() == Some(parent) && d.domain_id != *domain_id)
             .collect()
     }
@@ -67,11 +69,9 @@ impl FederationRouter {
         from: &uuid::Uuid,
         target_tier: FederationTier,
     ) -> SyncResult<Vec<uuid::Uuid>> {
-        let path = self.path_to_tier(from, target_tier)
-            .ok_or_else(|| SyncEngineError::Internal(format!(
-                "No route from {} to tier {:?}",
-                from, target_tier
-            )))?;
+        let path = self.path_to_tier(from, target_tier).ok_or_else(|| {
+            SyncEngineError::Internal(format!("No route from {} to tier {:?}", from, target_tier))
+        })?;
         Ok(path)
     }
 
@@ -80,7 +80,8 @@ impl FederationRouter {
         from: &uuid::Uuid,
         target_tier: FederationTier,
     ) -> Vec<uuid::Uuid> {
-        self.domains.values()
+        self.domains
+            .values()
             .filter(|d| d.tier == target_tier)
             .map(|d| d.domain_id)
             .filter(|id| id != from)
@@ -95,7 +96,11 @@ impl FederationRouter {
         &self.domains
     }
 
-    fn path_to_tier(&self, from: &uuid::Uuid, target_tier: FederationTier) -> Option<Vec<uuid::Uuid>> {
+    fn path_to_tier(
+        &self,
+        from: &uuid::Uuid,
+        target_tier: FederationTier,
+    ) -> Option<Vec<uuid::Uuid>> {
         // BFS to find shortest path to any domain of target_tier
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();

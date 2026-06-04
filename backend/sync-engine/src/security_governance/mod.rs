@@ -1,7 +1,7 @@
 use tracing::{info, warn};
 
-pub mod threat;
 pub mod integrity;
+pub mod threat;
 
 /// Sovereign national security governance — zero-trust enforcement, trust scoring,
 /// rogue node detection, insider threat detection, replay anomaly detection
@@ -98,21 +98,33 @@ impl SecurityGovernanceEngine {
         (weighted / total_weight).clamp(0.0, 1.0)
     }
 
-    pub fn detect_rogue_node(&self, node_id: &uuid::Uuid, events: &[SecurityEvent]) -> Option<RogueNodeReport> {
-        let anomaly_count = events.iter()
+    pub fn detect_rogue_node(
+        &self,
+        node_id: &uuid::Uuid,
+        events: &[SecurityEvent],
+    ) -> Option<RogueNodeReport> {
+        let anomaly_count = events
+            .iter()
             .filter(|e| {
                 e.node_id == *node_id
-                    && matches!(e.event_type, SecurityEventType::AuthenticationFailure
-                        | SecurityEventType::SignatureVerificationFailed
-                        | SecurityEventType::ReplayAnomaly)
+                    && matches!(
+                        e.event_type,
+                        SecurityEventType::AuthenticationFailure
+                            | SecurityEventType::SignatureVerificationFailed
+                            | SecurityEventType::ReplayAnomaly
+                    )
             })
             .count();
 
-        let threat_count = events.iter()
+        let threat_count = events
+            .iter()
             .filter(|e| {
                 e.node_id == *node_id
-                    && matches!(e.event_type, SecurityEventType::DataTamperingDetected
-                        | SecurityEventType::UnauthorizedAccess)
+                    && matches!(
+                        e.event_type,
+                        SecurityEventType::DataTamperingDetected
+                            | SecurityEventType::UnauthorizedAccess
+                    )
             })
             .count();
 
@@ -141,30 +153,43 @@ impl SecurityGovernanceEngine {
         None
     }
 
-    pub fn generate_security_posture(&self, trust_scores: &[TrustScore], events: &[SecurityEvent]) -> SecurityPosture {
+    pub fn generate_security_posture(
+        &self,
+        trust_scores: &[TrustScore],
+        events: &[SecurityEvent],
+    ) -> SecurityPosture {
         let avg_trust: f64 = if !trust_scores.is_empty() {
             trust_scores.iter().map(|t| t.current_score).sum::<f64>() / trust_scores.len() as f64
         } else {
             0.0
         };
 
-        let critical_events = events.iter()
+        let critical_events = events
+            .iter()
             .filter(|e| e.severity >= SecuritySeverity::High)
             .count() as u32;
 
-        let tamper_events = events.iter()
+        let tamper_events = events
+            .iter()
             .filter(|e| matches!(e.event_type, SecurityEventType::DataTamperingDetected))
             .count() as u32;
 
         let mut recommendations = Vec::new();
         if avg_trust < 0.5 {
-            recommendations.push("Critical: overall trust score below 0.5 — initiate federation-wide trust review".into());
+            recommendations.push(
+                "Critical: overall trust score below 0.5 — initiate federation-wide trust review"
+                    .into(),
+            );
         }
         if critical_events > 10 {
-            recommendations.push("High volume of critical security events — consider sovereign lockdown".into());
+            recommendations.push(
+                "High volume of critical security events — consider sovereign lockdown".into(),
+            );
         }
         if tamper_events > 0 {
-            recommendations.push("Tampering detected — verify event chain integrity across all domains".into());
+            recommendations.push(
+                "Tampering detected — verify event chain integrity across all domains".into(),
+            );
         }
 
         info!(

@@ -82,19 +82,22 @@ impl ConflictJournal {
     }
 
     pub fn entries_for_record(&self, record_id: &str) -> Vec<&ConflictJournalEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.record_id == record_id)
             .collect()
     }
 
     pub fn entries_for_node(&self, node_id: &uuid::Uuid) -> Vec<&ConflictJournalEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.local_node == *node_id || e.remote_node == *node_id)
             .collect()
     }
 
     pub fn unresolved(&self) -> Vec<&ConflictJournalEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.resolution.is_none())
             .collect()
     }
@@ -103,7 +106,9 @@ impl ConflictJournal {
         let entry = self.entries.iter().find(|e| e.entry_id == *entry_id)?;
         Some(ForensicTrail {
             entry: entry.clone(),
-            timeline: self.entries.iter()
+            timeline: self
+                .entries
+                .iter()
                 .filter(|e| e.record_id == entry.record_id)
                 .cloned()
                 .collect(),

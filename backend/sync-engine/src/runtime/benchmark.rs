@@ -86,7 +86,11 @@ impl BenchmarkEngine {
         Self
     }
 
-    pub fn create_config(benchmark_type: BenchmarkType, throughput: u64, duration: u64) -> BenchmarkConfig {
+    pub fn create_config(
+        benchmark_type: BenchmarkType,
+        throughput: u64,
+        duration: u64,
+    ) -> BenchmarkConfig {
         BenchmarkConfig {
             benchmark_id: uuid::Uuid::now_v7(),
             benchmark_type,
@@ -98,8 +102,10 @@ impl BenchmarkEngine {
     }
 
     pub fn simulate_run(&self, config: &BenchmarkConfig) -> BenchmarkResult {
-        let throughput = config.target_throughput as f64 * (0.85 + 0.15);
+        let throughput = config.target_throughput as f64 * 0.925;
         let total_ops = config.target_throughput * config.duration_secs;
+
+        let (p50, p95, p99, error_rate) = self.type_specific_profile(config.benchmark_type);
 
         info!(
             kind = ?config.benchmark_type,
@@ -112,13 +118,30 @@ impl BenchmarkEngine {
             benchmark_id: config.benchmark_id,
             benchmark_type: config.benchmark_type,
             throughput_per_sec: throughput,
-            p50_latency_ms: 50.0,
-            p95_latency_ms: 150.0,
-            p99_latency_ms: 300.0,
-            error_rate: 0.001,
+            p50_latency_ms: p50,
+            p95_latency_ms: p95,
+            p99_latency_ms: p99,
+            error_rate,
             duration_secs: config.duration_secs,
             total_operations: total_ops,
             bottleneck: None,
+        }
+    }
+
+    /// Return type-specific latency/error profiles based on benchmark type characteristics.
+    fn type_specific_profile(&self, btype: BenchmarkType) -> (f64, f64, f64, f64) {
+        match btype {
+            BenchmarkType::ReplayThroughput => (50.0, 150.0, 300.0, 0.001),
+            BenchmarkType::SyncThroughput => (30.0, 100.0, 200.0, 0.002),
+            BenchmarkType::FederationScale => (200.0, 800.0, 2000.0, 0.005),
+            BenchmarkType::DeterministicReplayLoad => (80.0, 250.0, 500.0, 0.001),
+            BenchmarkType::EventStorm => (20.0, 80.0, 150.0, 0.01),
+            BenchmarkType::PostgresSaturation => (100.0, 500.0, 1500.0, 0.02),
+            BenchmarkType::QueuePressure => (10.0, 50.0, 100.0, 0.005),
+            BenchmarkType::CrdtCompaction => (500.0, 2000.0, 5000.0, 0.001),
+            BenchmarkType::ReplayLatency => (40.0, 120.0, 250.0, 0.001),
+            BenchmarkType::FederationRoutingPressure => (150.0, 600.0, 1500.0, 0.003),
+            BenchmarkType::EdgeRecovery => (1000.0, 5000.0, 15000.0, 0.01),
         }
     }
 }
@@ -138,6 +161,31 @@ impl DeterministicLoadGenerator {
             deterministic_seed: seed,
         }
     }
+
+    /// Generate a federated load profile that simulates multiple regional nodes
+    /// producing load simultaneously with deterministic distribution.
+    pub fn create_federated_profile(
+        regions: &[&str],
+        ops_per_region: u64,
+        seed: u64,
+    ) -> Vec<(String, LoadProfile)> {
+        regions
+            .iter()
+            .enumerate()
+            .map(|(i, region)| {
+                let region_seed = seed.wrapping_add(i as u64);
+                let profile = LoadProfile {
+                    profile_id: uuid::Uuid::now_v7(),
+                    target_ops_per_sec: ops_per_region,
+                    burst_size: (ops_per_region / 5).max(1) as u32,
+                    burst_interval_ms: 100 + (i as u64 * 10),
+                    payload_size_bytes: 1024,
+                    deterministic_seed: region_seed,
+                };
+                (region.to_string(), profile)
+            })
+            .collect()
+    }
 }
 
 impl ReplayProfiler {
@@ -145,10 +193,28 @@ impl ReplayProfiler {
         Self
     }
 
-    pub fn profile_replay(&self, stream_id: &str, events: u64, duration_ms: u64, memory_bytes: u64) -> ReplayProfile {
-        let eps = if duration_ms > 0 { events as f64 / duration_ms as f64 * 1000.0 } else { 0.0 };
-        let mpe = if events > 0 { memory_bytes as f64 / events as f64 } else { 0.0 };
-        let cpe = if events > 0 { duration_ms as f64 / events as f64 } else { 0.0 };
+    pub fn profile_replay(
+        &self,
+        stream_id: &str,
+        events: u64,
+        duration_ms: u64,
+        memory_bytes: u64,
+    ) -> ReplayProfile {
+        let eps = if duration_ms > 0 {
+            events as f64 / duration_ms as f64 * 1000.0
+        } else {
+            0.0
+        };
+        let mpe = if events > 0 {
+            memory_bytes as f64 / events as f64
+        } else {
+            0.0
+        };
+        let cpe = if events > 0 {
+            duration_ms as f64 / events as f64
+        } else {
+            0.0
+        };
 
         let mut bottlenecks = Vec::new();
         if eps < 100.0 {
@@ -168,6 +234,23 @@ impl ReplayProfiler {
             bottlenecks,
         }
     }
+
+    /// Compute latency percentiles from a sorted slice of latency values (ms).
+    pub fn compute_latency_percentiles(latencies_ms: &[f64]) -> (f64, f64, f64, f64) {
+        if latencies_ms.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+        let mut sorted = latencies_ms.to_vec();
+        sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let len = sorted.len();
+        let p50_idx = ((len as f64 * 0.50) as usize).min(len - 1);
+        let p95_idx = ((len as f64 * 0.95) as usize).min(len - 1);
+        let p99_idx = ((len as f64 * 0.99) as usize).min(len - 1);
+        let avg = sorted.iter().sum::<f64>() / len as f64;
+
+        (avg, sorted[p50_idx], sorted[p95_idx], sorted[p99_idx])
+    }
 }
 
 impl BottleneckDetector {
@@ -179,10 +262,16 @@ impl BottleneckDetector {
         let mut bottlenecks = Vec::new();
         for r in results {
             if r.error_rate > 0.01 {
-                bottlenecks.push(format!("High error rate ({:.3}) in {:?}", r.error_rate, r.benchmark_type));
+                bottlenecks.push(format!(
+                    "High error rate ({:.3}) in {:?}",
+                    r.error_rate, r.benchmark_type
+                ));
             }
             if r.p99_latency_ms > 500.0 {
-                bottlenecks.push(format!("High p99 latency ({:.0}ms) in {:?}", r.p99_latency_ms, r.benchmark_type));
+                bottlenecks.push(format!(
+                    "High p99 latency ({:.0}ms) in {:?}",
+                    r.p99_latency_ms, r.benchmark_type
+                ));
             }
         }
         bottlenecks
@@ -194,9 +283,22 @@ impl QueuePressureEngine {
         Self
     }
 
-    pub fn assess_pressure(&self, depth: u64, max_depth: u64, drain_rate: f64) -> QueuePressureReport {
-        let saturation = if max_depth > 0 { depth as f64 / max_depth as f64 } else { 0.0 };
-        let drain = if drain_rate > 0.0 { depth as f64 / drain_rate } else { f64::MAX };
+    pub fn assess_pressure(
+        &self,
+        depth: u64,
+        max_depth: u64,
+        drain_rate: f64,
+    ) -> QueuePressureReport {
+        let saturation = if max_depth > 0 {
+            depth as f64 / max_depth as f64
+        } else {
+            0.0
+        };
+        let drain = if drain_rate > 0.0 {
+            depth as f64 / drain_rate
+        } else {
+            f64::MAX
+        };
 
         QueuePressureReport {
             queue_depth: depth,

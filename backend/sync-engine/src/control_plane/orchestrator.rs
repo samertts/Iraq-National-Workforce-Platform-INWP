@@ -155,7 +155,10 @@ impl FederationOrchestrator {
                 });
             }
         }
-        info!(regions = topology.regions.len(), "Federation orchestration plan created");
+        info!(
+            regions = topology.regions.len(),
+            "Federation orchestration plan created"
+        );
         FederationOrchestrationPlan {
             plan_id: uuid::Uuid::now_v7(),
             topology,
@@ -170,11 +173,7 @@ impl ReplayOrchestrator {
         Self
     }
 
-    pub fn create_plan(
-        &self,
-        stream_id: &str,
-        target_version: &str,
-    ) -> ReplayOrchestrationPlan {
+    pub fn create_plan(&self, stream_id: &str, target_version: &str) -> ReplayOrchestrationPlan {
         info!(stream = %stream_id, version = %target_version, "Replay orchestration plan created");
         ReplayOrchestrationPlan {
             plan_id: uuid::Uuid::now_v7(),
@@ -191,7 +190,11 @@ impl RecoveryOrchestrator {
         Self
     }
 
-    pub fn create_plan(&self, domain: &str, recovery_type: RecoveryType) -> RecoveryOrchestrationPlan {
+    pub fn create_plan(
+        &self,
+        domain: &str,
+        recovery_type: RecoveryType,
+    ) -> RecoveryOrchestrationPlan {
         let steps = vec![
             OrchestratedStep {
                 step_id: uuid::Uuid::now_v7(),

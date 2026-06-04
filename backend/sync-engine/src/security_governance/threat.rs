@@ -81,15 +81,20 @@ impl ThreatEngine {
         let mut behaviors = Vec::new();
         let mut remediation = Vec::new();
 
-        let threat_score: f64 = indicators.iter()
-            .map(|i| i.confidence * match i.severity {
-                super::SecuritySeverity::Info => 0.1,
-                super::SecuritySeverity::Low => 0.2,
-                super::SecuritySeverity::Medium => 0.4,
-                super::SecuritySeverity::High => 0.7,
-                super::SecuritySeverity::Critical => 1.0,
+        let threat_score: f64 = indicators
+            .iter()
+            .map(|i| {
+                i.confidence
+                    * match i.severity {
+                        super::SecuritySeverity::Info => 0.1,
+                        super::SecuritySeverity::Low => 0.2,
+                        super::SecuritySeverity::Medium => 0.4,
+                        super::SecuritySeverity::High => 0.7,
+                        super::SecuritySeverity::Critical => 1.0,
+                    }
             })
-            .sum::<f64>() / indicators.len().max(1) as f64;
+            .sum::<f64>()
+            / indicators.len().max(1) as f64;
 
         for indicator in &indicators {
             match indicator.indicator_type {
@@ -99,7 +104,8 @@ impl ThreatEngine {
                 }
                 ThreatIndicatorType::DataExfiltration => {
                     behaviors.push("Suspicious data access pattern detected".into());
-                    remediation.push("Enable data access logging and restrict sensitive data".into());
+                    remediation
+                        .push("Enable data access logging and restrict sensitive data".into());
                 }
                 ThreatIndicatorType::TrustPoisoning => {
                     behaviors.push("Attempting to manipulate trust scores".into());

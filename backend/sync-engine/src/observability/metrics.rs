@@ -1,7 +1,10 @@
-use metrics::{counter, gauge, histogram, describe_counter, describe_gauge, describe_histogram};
+use metrics::{counter, describe_counter, describe_gauge, describe_histogram, gauge, histogram};
 
 pub fn init_sync_metrics() {
-    describe_counter!("sync.batches.total", "Total number of sync batches processed");
+    describe_counter!(
+        "sync.batches.total",
+        "Total number of sync batches processed"
+    );
     describe_counter!("sync.events.synced", "Total number of events synced");
     describe_counter!("sync.conflicts.detected", "Total conflicts detected");
     describe_counter!("sync.conflicts.resolved", "Total conflicts resolved");

@@ -1,4 +1,4 @@
-use crate::core::node::{NodeIdentity, NodeType, NodeStatus, Capabilities};
+use crate::core::node::{Capabilities, NodeIdentity, NodeStatus, NodeType};
 use crate::error::{SyncEngineError, SyncResult};
 use sqlx::PgPool;
 
@@ -52,12 +52,11 @@ impl NodeRepo {
     }
 
     pub async fn find_by_id(&self, node_id: uuid::Uuid) -> SyncResult<Option<NodeIdentity>> {
-        let row = sqlx::query_as::<_, NodeRow>(
-            "SELECT * FROM sync.node_registry WHERE node_id = $1",
-        )
-        .bind(node_id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let row =
+            sqlx::query_as::<_, NodeRow>("SELECT * FROM sync.node_registry WHERE node_id = $1")
+                .bind(node_id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         row.map(TryInto::try_into).transpose()
     }
@@ -100,12 +99,10 @@ impl NodeRepo {
     }
 
     pub async fn mark_offline(&self, node_id: uuid::Uuid) -> SyncResult<()> {
-        sqlx::query(
-            "UPDATE sync.node_registry SET status = 'offline' WHERE node_id = $1",
-        )
-        .bind(node_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE sync.node_registry SET status = 'offline' WHERE node_id = $1")
+            .bind(node_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
@@ -144,7 +141,12 @@ impl TryFrom<NodeRow> for NodeIdentity {
             "edge" => NodeType::Edge,
             "mobile" => NodeType::Mobile,
             "dr_replica" => NodeType::DrReplica,
-            other => return Err(SyncEngineError::Internal(format!("Unknown node type: {}", other))),
+            other => {
+                return Err(SyncEngineError::Internal(format!(
+                    "Unknown node type: {}",
+                    other
+                )))
+            }
         };
 
         let status = match row.status.as_str() {

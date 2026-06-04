@@ -120,7 +120,11 @@ impl EventRegistry {
         self.lineage.push(entry);
     }
 
-    pub fn get_contract(&self, event_name: &str, version: &semver::Version) -> Option<&EventContract> {
+    pub fn get_contract(
+        &self,
+        event_name: &str,
+        version: &semver::Version,
+    ) -> Option<&EventContract> {
         let key = format!("{}@{}", event_name, version);
         self.contracts.get(&key)
     }
@@ -135,7 +139,10 @@ impl EventRegistry {
     }
 
     pub fn validate_protobuf(&self, contract_id: &str) -> ProtocolBufferValidation {
-        let contract = self.contracts.values().find(|c| c.contract_id == contract_id);
+        let contract = self
+            .contracts
+            .values()
+            .find(|c| c.contract_id == contract_id);
         match contract {
             Some(c) => ProtocolBufferValidation {
                 contract_id: contract_id.to_string(),
@@ -166,16 +173,22 @@ impl EventRegistry {
     }
 
     pub fn approve_deprecation(&mut self, contract_id: &str, approver: &str) -> SyncResult<()> {
-        let request = self.deprecation_queue
+        let request = self
+            .deprecation_queue
             .iter_mut()
             .find(|r| r.contract_id == contract_id && !r.approved)
-            .ok_or_else(|| crate::error::SyncEngineError::Internal(
-                format!("No pending deprecation request for '{}'", contract_id)
-            ))?;
+            .ok_or_else(|| {
+                crate::error::SyncEngineError::Internal(format!(
+                    "No pending deprecation request for '{}'",
+                    contract_id
+                ))
+            })?;
         request.approved = true;
         request.approved_by = Some(approver.to_string());
 
-        if let Some(contract) = self.contracts.values_mut()
+        if let Some(contract) = self
+            .contracts
+            .values_mut()
             .find(|c| c.contract_id == contract_id)
         {
             contract.status = ContractStatus::Deprecated;
@@ -185,7 +198,10 @@ impl EventRegistry {
     }
 
     pub fn get_lineage(&self, event_name: &str) -> Vec<&EventLineageEntry> {
-        self.lineage.iter().filter(|e| e.event_name == event_name).collect()
+        self.lineage
+            .iter()
+            .filter(|e| e.event_name == event_name)
+            .collect()
     }
 
     pub fn get_all_versions(&self, event_name: &str) -> Vec<&EventContract> {
@@ -201,9 +217,13 @@ impl EventRegistry {
 
         match (from_ver, to_ver) {
             (Some(f), Some(t)) if f <= t => {
-                let from_contract = self.contracts.values()
+                let from_contract = self
+                    .contracts
+                    .values()
                     .find(|c| c.event_name == event_name && c.version == f);
-                let to_contract = self.contracts.values()
+                let to_contract = self
+                    .contracts
+                    .values()
                     .find(|c| c.event_name == event_name && c.version == t);
                 matches!((from_contract, to_contract), (Some(_), Some(_)))
             }

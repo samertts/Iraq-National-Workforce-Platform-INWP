@@ -1,12 +1,12 @@
+use std::sync::Arc;
 use sync_engine::config::SyncEngineConfig;
+use sync_engine::core::node::NodeType;
 use sync_engine::observability::init_observability;
 use sync_engine::storage::PgStore;
 use sync_engine::transport::grpc::GrpcServer;
 use sync_engine::transport::mesh::MeshDiscovery;
-use sync_engine::core::node::NodeType;
-use std::sync::Arc;
 use tokio::signal;
-use tracing::{info, error};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -29,14 +29,12 @@ async fn main() -> anyhow::Result<()> {
 
     let node_type: NodeType = (&config.node.node_type).into();
 
-    let mesh_discovery = Arc::new(
-        MeshDiscovery::new(
-            node_id,
-            node_type,
-            &config.node.region,
-            &config.transport,
-        )
-    );
+    let mesh_discovery = Arc::new(MeshDiscovery::new(
+        node_id,
+        node_type,
+        &config.node.region,
+        &config.transport,
+    ));
 
     if config.transport.mdns_enabled {
         let md = mesh_discovery.clone();
@@ -47,13 +45,12 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
-    let grpc_server = GrpcServer::new(
-        config.clone(),
-        pool.clone(),
-        mesh_discovery.clone(),
-    );
+    let grpc_server = GrpcServer::new(config.clone(), pool.clone(), mesh_discovery.clone());
 
-    let grpc_addr = format!("{}:{}", config.transport.grpc_listen, config.transport.grpc_port);
+    let grpc_addr = format!(
+        "{}:{}",
+        config.transport.grpc_listen, config.transport.grpc_port
+    );
     info!(address = %grpc_addr, "Starting gRPC sync server");
 
     let _grpc_handle = tokio::spawn(async move {

@@ -34,10 +34,12 @@ pub async fn perform_reconciliation(
     let mut auto_resolved = 0_u32;
     let mut manual_required = 0_u32;
 
-    let local_by_id: std::collections::HashMap<_, _> = local_records.iter()
+    let local_by_id: std::collections::HashMap<_, _> = local_records
+        .iter()
         .map(|r| (r.record_id.clone(), r))
         .collect();
-    let remote_by_id: std::collections::HashMap<_, _> = remote_records.iter()
+    let remote_by_id: std::collections::HashMap<_, _> = remote_records
+        .iter()
         .map(|r| (r.record_id.clone(), r))
         .collect();
 
@@ -49,7 +51,8 @@ pub async fn perform_reconciliation(
             (Some(l), Some(r)) => {
                 let vv_cmp = l.version_vector.compare(&r.version_vector);
                 if vv_cmp == crate::core::version::VersionOrder::Concurrent {
-                    let strategy = resolver.matrix
+                    let strategy = resolver
+                        .matrix
                         .get_strategy(&l.record_type)
                         .unwrap_or(&ConflictStrategy::Lww);
 

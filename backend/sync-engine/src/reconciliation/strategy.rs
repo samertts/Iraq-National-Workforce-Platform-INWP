@@ -45,7 +45,8 @@ impl ResolutionMatrix {
     }
 
     pub fn get_strategy(&self, entity_type: &str) -> Option<&ConflictStrategy> {
-        self.strategies.get(entity_type)
+        self.strategies
+            .get(entity_type)
             .or(Some(&self.default_strategy))
     }
 

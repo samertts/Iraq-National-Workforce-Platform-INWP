@@ -59,7 +59,9 @@ impl MerkleTree {
 
         self.nodes.clear();
 
-        let mut level_nodes: Vec<(String, Vec<u8>)> = self.leaves.iter()
+        let mut level_nodes: Vec<(String, Vec<u8>)> = self
+            .leaves
+            .iter()
             .map(|(path, hash)| (path.clone(), hash.clone()))
             .collect();
 
@@ -69,7 +71,11 @@ impl MerkleTree {
             let prefix = if height == 0 {
                 format!("{}/node", self.partition_key)
             } else {
-                level_nodes[0].0.rsplit_once('/').map(|(p, _)| format!("{}/node", p)).unwrap_or_else(|| format!("{}/node", self.partition_key))
+                level_nodes[0]
+                    .0
+                    .rsplit_once('/')
+                    .map(|(p, _)| format!("{}/node", p))
+                    .unwrap_or_else(|| format!("{}/node", self.partition_key))
             };
 
             for chunk in level_nodes.chunks(2) {
@@ -89,7 +95,11 @@ impl MerkleTree {
             height += 1;
         }
 
-        self.root_hash = level_nodes.into_iter().next().map(|(_, h)| h).unwrap_or_default();
+        self.root_hash = level_nodes
+            .into_iter()
+            .next()
+            .map(|(_, h)| h)
+            .unwrap_or_default();
         self.height = height;
     }
 
@@ -103,7 +113,8 @@ impl MerkleTree {
         let other_keys: HashSet<&String> = other.leaves.keys().collect();
 
         for key in self_keys.symmetric_difference(&other_keys) {
-            let record_id = self.record_id_from_path(key)
+            let record_id = self
+                .record_id_from_path(key)
                 .or_else(|| other.record_id_from_path(key));
             if let Some(id) = record_id {
                 divergent.push(id);
@@ -125,7 +136,9 @@ impl MerkleTree {
 
     pub fn compute_diff_since(&self, from_root: &[u8]) -> Vec<String> {
         if from_root.is_empty() {
-            return self.leaves.keys()
+            return self
+                .leaves
+                .keys()
                 .filter_map(|k| self.record_id_from_path(k))
                 .collect();
         }
@@ -134,7 +147,8 @@ impl MerkleTree {
             return Vec::new();
         }
 
-        self.leaves.keys()
+        self.leaves
+            .keys()
             .filter_map(|k| self.record_id_from_path(k))
             .collect()
     }
@@ -156,7 +170,8 @@ impl MerkleTree {
         // Reconstruct the level structure to find siblings
         // Collect hashes for each level like rebuild() does
         let mut level_hashes: Vec<Vec<Vec<u8>>> = Vec::new();
-        let mut current_hashes: Vec<Vec<u8>> = sorted_leaves.iter()
+        let mut current_hashes: Vec<Vec<u8>> = sorted_leaves
+            .iter()
             .map(|k| self.leaves[k.as_str()].clone())
             .collect();
         level_hashes.push(current_hashes.clone());
@@ -177,8 +192,15 @@ impl MerkleTree {
 
         // Walk up the levels collecting siblings
         let mut current_idx = leaf_idx;
-        for level_hashes in level_hashes.iter().take(level_hashes.len().saturating_sub(1)) {
-            let sibling_idx = if current_idx.is_multiple_of(2) { current_idx + 1 } else { current_idx - 1 };
+        for level_hashes in level_hashes
+            .iter()
+            .take(level_hashes.len().saturating_sub(1))
+        {
+            let sibling_idx = if current_idx.is_multiple_of(2) {
+                current_idx + 1
+            } else {
+                current_idx - 1
+            };
             if (sibling_idx as usize) < level_hashes.len() {
                 siblings.push(level_hashes[sibling_idx as usize].clone());
             }
@@ -253,7 +275,12 @@ pub fn hash_node(data: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-pub fn compute_record_hash(record_id: &str, record_type: &str, payload: &[u8], version: u64) -> Vec<u8> {
+pub fn compute_record_hash(
+    record_id: &str,
+    record_type: &str,
+    payload: &[u8],
+    version: u64,
+) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(record_id.as_bytes());
     hasher.update(b":");

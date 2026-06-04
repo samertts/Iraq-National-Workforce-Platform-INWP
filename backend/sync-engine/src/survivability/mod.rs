@@ -130,7 +130,10 @@ impl SurvivabilityEngine {
             continuity_token: uuid::Uuid::now_v7(),
         };
         info!(domain = %domain, "Continuity checkpoint recorded");
-        self.continuity_registry.write().await.insert(domain.to_string(), record);
+        self.continuity_registry
+            .write()
+            .await
+            .insert(domain.to_string(), record);
     }
 
     pub async fn enter_isolation(&self, zone_id: &str, autonomy: AutonomyLevel) {
@@ -142,7 +145,10 @@ impl SurvivabilityEngine {
             health_score: 1.0,
         };
         warn!(zone = %zone_id, level = ?autonomy, "Zone entered isolation");
-        self.isolation_zones.write().await.insert(zone_id.to_string(), state);
+        self.isolation_zones
+            .write()
+            .await
+            .insert(zone_id.to_string(), state);
     }
 
     pub async fn degrade(&self, mode: OperationalDegradation, capabilities: Vec<String>) {
@@ -165,7 +171,8 @@ impl SurvivabilityEngine {
 
     pub async fn get_recovery_estimate(&self) -> u64 {
         let tasks = self.recovery_queue.read().await;
-        let total: u64 = tasks.iter()
+        let total: u64 = tasks
+            .iter()
             .filter(|t| !t.completed)
             .map(|t| match t.priority {
                 RecoveryPriority::Sovereign => 1000,
@@ -205,7 +212,10 @@ impl SurvivabilityEngine {
             risks.push("Platform in major degradation — recovery priority critical".into());
         }
         if zones.len() > 3 {
-            risks.push(format!("{} zones isolated — federation fragmentation risk", zones.len()));
+            risks.push(format!(
+                "{} zones isolated — federation fragmentation risk",
+                zones.len()
+            ));
         }
         if continuity.len() < 5 {
             risks.push("Insufficient continuity checkpoints for reliable recovery".into());

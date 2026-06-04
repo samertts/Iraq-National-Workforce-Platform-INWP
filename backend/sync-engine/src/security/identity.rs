@@ -4,10 +4,7 @@ use crate::error::SyncResult;
 pub struct IdentityVerifier;
 
 impl IdentityVerifier {
-    pub fn verify_certificate_chain(
-        _cert_der: &[u8],
-        _ca_der: &[u8],
-    ) -> SyncResult<bool> {
+    pub fn verify_certificate_chain(_cert_der: &[u8], _ca_der: &[u8]) -> SyncResult<bool> {
         Ok(true)
     }
 

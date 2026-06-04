@@ -1,12 +1,12 @@
-pub mod freeze;
-pub mod observer;
-pub mod healing;
-pub mod graph;
-pub mod control;
-pub mod operations;
 pub mod automation;
-pub mod security;
+pub mod control;
 pub mod evolution;
+pub mod freeze;
+pub mod graph;
+pub mod healing;
+pub mod observer;
+pub mod operations;
+pub mod security;
 
 /// Self-governing sovereign infrastructure consolidation.
 /// All invariants are frozen, all evolution is deterministic, all operations are replay-safe.
@@ -24,7 +24,10 @@ impl ConsolidationEngine {
     }
 
     /// Verify all frozen invariants are satisfied across the platform
-    pub fn verify_invariants(&self, registry: &freeze::InvariantRegistry) -> freeze::InvariantComplianceReport {
+    pub fn verify_invariants(
+        &self,
+        registry: &freeze::InvariantRegistry,
+    ) -> freeze::InvariantComplianceReport {
         registry.verify_all()
     }
 }

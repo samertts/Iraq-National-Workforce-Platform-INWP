@@ -48,9 +48,8 @@ impl TopologyManager {
         let mut violations = Vec::new();
         let cycle_detected = false;
 
-        let node_map: HashMap<uuid::Uuid, &TopologyNode> = nodes.iter()
-            .map(|n| (n.node_id, n))
-            .collect();
+        let node_map: HashMap<uuid::Uuid, &TopologyNode> =
+            nodes.iter().map(|n| (n.node_id, n)).collect();
 
         for node in nodes {
             if let Some(parent_id) = node.parent {
@@ -83,9 +82,11 @@ impl TopologyManager {
         } else {
             0.0
         };
-        let variance = depths.iter()
+        let variance = depths
+            .iter()
             .map(|d| (*d as f64 - avg_depth).powi(2))
-            .sum::<f64>() / depths.len().max(1) as f64;
+            .sum::<f64>()
+            / depths.len().max(1) as f64;
 
         info!(
             nodes = nodes.len(),
@@ -109,9 +110,8 @@ impl TopologyManager {
         nodes: &[TopologyNode],
     ) -> HashMap<uuid::Uuid, Vec<uuid::Uuid>> {
         let mut routing = HashMap::new();
-        let node_map: HashMap<uuid::Uuid, &TopologyNode> = nodes.iter()
-            .map(|n| (n.node_id, n))
-            .collect();
+        let node_map: HashMap<uuid::Uuid, &TopologyNode> =
+            nodes.iter().map(|n| (n.node_id, n)).collect();
 
         for node in nodes {
             let mut path = Vec::new();
@@ -137,9 +137,8 @@ impl TopologyManager {
         node_id: uuid::Uuid,
         nodes: &[TopologyNode],
     ) -> Option<TopologyNode> {
-        let node_map: HashMap<uuid::Uuid, &TopologyNode> = nodes.iter()
-            .map(|n| (n.node_id, n))
-            .collect();
+        let node_map: HashMap<uuid::Uuid, &TopologyNode> =
+            nodes.iter().map(|n| (n.node_id, n)).collect();
         let mut current = node_map.get(&node_id)?;
 
         loop {

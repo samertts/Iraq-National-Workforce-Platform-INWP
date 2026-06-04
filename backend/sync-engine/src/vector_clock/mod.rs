@@ -39,7 +39,9 @@ impl DottedVersionVector {
         let dots = self.dots.entry(node_id).or_default();
         dots.push(*counter);
 
-        let deps: Vec<uuid::Uuid> = self.causal_history.last()
+        let deps: Vec<uuid::Uuid> = self
+            .causal_history
+            .last()
             .map(|last| vec![last.event_id])
             .unwrap_or_default();
 
@@ -99,7 +101,11 @@ impl DottedVersionVector {
 
         // Merge causal history
         for event in &other.causal_history {
-            if !self.causal_history.iter().any(|e| e.event_id == event.event_id) {
+            if !self
+                .causal_history
+                .iter()
+                .any(|e| e.event_id == event.event_id)
+            {
                 self.causal_history.push(event.clone());
             }
         }

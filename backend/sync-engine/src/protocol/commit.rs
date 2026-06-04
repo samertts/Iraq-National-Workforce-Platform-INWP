@@ -2,7 +2,7 @@ use crate::core::types::{BatchReceipt, SyncDirection, SyncPhase};
 use crate::error::SyncResult;
 use crate::protocol::SyncSession;
 use crate::security::signing::SigningEngine;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 pub struct CommitmentResult {
     pub receipt: BatchReceipt,

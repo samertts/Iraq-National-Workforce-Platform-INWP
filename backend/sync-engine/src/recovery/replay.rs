@@ -10,7 +10,11 @@ pub struct ReplayEngine {
 }
 
 impl ReplayEngine {
-    pub fn new(batch_size: u32, verify_merkle: bool, checkpoint_recoverer: CheckpointRecoverer) -> Self {
+    pub fn new(
+        batch_size: u32,
+        verify_merkle: bool,
+        checkpoint_recoverer: CheckpointRecoverer,
+    ) -> Self {
         Self {
             batch_size,
             verify_merkle,
@@ -56,13 +60,11 @@ impl ReplayEngine {
             if self.verify_merkle {
                 let stored_root = from_checkpoint.merkle_root.as_slice();
                 if !stored_root.is_empty() {
-                    let integrity_ok = self.checkpoint_recoverer
+                    let integrity_ok = self
+                        .checkpoint_recoverer
                         .verify_checkpoint_integrity(stored_root, &current_tree)?;
                     if !integrity_ok {
-                        warn!(
-                            batch = batch_seq,
-                            "Merkle root mismatch during replay"
-                        );
+                        warn!(batch = batch_seq, "Merkle root mismatch during replay");
                         return Err(SyncEngineError::Corruption(format!(
                             "Merkle root mismatch at batch {} during replay",
                             batch_seq

@@ -16,14 +16,15 @@ pub struct HealthStatus {
 }
 
 pub async fn readiness_check(pool: &sqlx::PgPool) -> SyncResult<ReadinessStatus> {
-    let db_ok = sqlx::query("SELECT 1")
-        .execute(pool)
-        .await
-        .is_ok();
+    let db_ok = sqlx::query("SELECT 1").execute(pool).await.is_ok();
 
     Ok(ReadinessStatus {
         ready: db_ok,
-        database: if db_ok { "connected".to_string() } else { "disconnected".to_string() },
+        database: if db_ok {
+            "connected".to_string()
+        } else {
+            "disconnected".to_string()
+        },
     })
 }
 

@@ -33,15 +33,19 @@ impl AnomalyDetector {
 
         // 2. Signature verification
         if !event.signature.is_empty()
-            && self.signing_engine.verify(&event.payload, &event.signature).is_err() {
-                return Some(CorruptionEvent::new(
-                    AnomalyType::InvalidSignature,
-                    CorruptionSeverity::Critical,
-                    event.node_id,
-                    format!("Invalid signature on event {}", event.event_id),
-                    event.signature.clone(),
-                ));
-            }
+            && self
+                .signing_engine
+                .verify(&event.payload, &event.signature)
+                .is_err()
+        {
+            return Some(CorruptionEvent::new(
+                AnomalyType::InvalidSignature,
+                CorruptionSeverity::Critical,
+                event.node_id,
+                format!("Invalid signature on event {}", event.event_id),
+                event.signature.clone(),
+            ));
+        }
 
         // 3. Timestamp sanity check
         let now = chrono::Utc::now();
@@ -98,7 +102,8 @@ impl AnomalyDetector {
         local_ancestors: &[Vec<u8>],
         remote_ancestors: &[Vec<u8>],
     ) -> Option<CorruptionEvent> {
-        let common_prefix_len = local_ancestors.iter()
+        let common_prefix_len = local_ancestors
+            .iter()
             .zip(remote_ancestors.iter())
             .take_while(|(a, b)| a == b)
             .count();

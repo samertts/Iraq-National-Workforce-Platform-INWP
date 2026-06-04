@@ -139,20 +139,24 @@ impl SchemaGovernance {
         let mut breaking_changes = Vec::new();
 
         let old = self.contracts.get(contract_id);
-        let policy = self.compatibility_policies.iter().find(|p| p.contract_id == contract_id);
+        let policy = self
+            .compatibility_policies
+            .iter()
+            .find(|p| p.contract_id == contract_id);
 
         if let Some(policy) = policy {
             if policy.backward_compatible {
                 if let Some(old_contract) = old {
                     for field in &old_contract.fields {
                         if field.removed_in_version.as_deref() == Some(new_version)
-                            && policy.require_field_preservation {
-                                violations.push(format!(
-                                    "Requires backward compatibility but field '{}' was removed",
-                                    field.name
-                                ));
-                                breaking_changes.push(format!("Removed field '{}'", field.name));
-                            }
+                            && policy.require_field_preservation
+                        {
+                            violations.push(format!(
+                                "Requires backward compatibility but field '{}' was removed",
+                                field.name
+                            ));
+                            breaking_changes.push(format!("Removed field '{}'", field.name));
+                        }
                     }
                 }
             }
@@ -169,29 +173,33 @@ impl SchemaGovernance {
         }
     }
 
-    pub fn check_evolution_rule(&self, contract_id: &str, rule: &EvolutionRule) -> PolicyEvalResult {
+    pub fn check_evolution_rule(
+        &self,
+        contract_id: &str,
+        rule: &EvolutionRule,
+    ) -> PolicyEvalResult {
         for ruleset in &self.evolution_rules {
-            if ruleset.contract_id == contract_id
-                && !ruleset.rules.contains(rule) {
-                    return PolicyEvalResult::Violation(GovernanceViolation {
-                        policy_id: uuid::Uuid::nil(),
-                        policy_name: "SchemaEvolutionRule".into(),
-                        severity: PolicySeverity::Error,
-                        message: format!(
-                            "Evolution rule '{:?}' not allowed for contract '{}'",
-                            rule, contract_id
-                        ),
-                        context: {
-                            let mut m = HashMap::new();
-                            m.insert("contract_id".into(), contract_id.into());
-                            m.insert("rule".into(), format!("{:?}", rule));
-                            m
-                        },
-                        remediations: vec![
-                            format!("Add evolution rule '{:?}' to contract '{}'", rule, contract_id),
-                        ],
-                    });
-                }
+            if ruleset.contract_id == contract_id && !ruleset.rules.contains(rule) {
+                return PolicyEvalResult::Violation(GovernanceViolation {
+                    policy_id: uuid::Uuid::nil(),
+                    policy_name: "SchemaEvolutionRule".into(),
+                    severity: PolicySeverity::Error,
+                    message: format!(
+                        "Evolution rule '{:?}' not allowed for contract '{}'",
+                        rule, contract_id
+                    ),
+                    context: {
+                        let mut m = HashMap::new();
+                        m.insert("contract_id".into(), contract_id.into());
+                        m.insert("rule".into(), format!("{:?}", rule));
+                        m
+                    },
+                    remediations: vec![format!(
+                        "Add evolution rule '{:?}' to contract '{}'",
+                        rule, contract_id
+                    )],
+                });
+            }
         }
         PolicyEvalResult::Pass
     }
@@ -222,7 +230,9 @@ impl SchemaGovernance {
     }
 
     pub fn generate_schema_digest(&self, contract_id: &str) -> Option<String> {
-        self.contracts.get(contract_id).map(|c| c.fingerprint.clone())
+        self.contracts
+            .get(contract_id)
+            .map(|c| c.fingerprint.clone())
     }
 }
 

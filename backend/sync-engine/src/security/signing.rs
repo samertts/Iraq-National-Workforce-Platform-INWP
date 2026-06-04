@@ -12,8 +12,9 @@ pub struct SigningEngine {
 
 impl SigningEngine {
     pub fn from_bytes(private_key: &[u8], key_id: impl Into<String>) -> SyncResult<Self> {
-        let bytes: [u8; 32] = private_key.try_into()
-            .map_err(|_| SyncEngineError::Crypto("Invalid private key length: expected 32 bytes".into()))?;
+        let bytes: [u8; 32] = private_key.try_into().map_err(|_| {
+            SyncEngineError::Crypto("Invalid private key length: expected 32 bytes".into())
+        })?;
 
         let signing_key = SigningKey::from_bytes(&bytes);
         let verifying_key = signing_key.verifying_key();
@@ -26,8 +27,9 @@ impl SigningEngine {
     }
 
     pub fn from_file(path: impl AsRef<Path>, key_id: impl Into<String>) -> SyncResult<Self> {
-        let bytes = std::fs::read(path.as_ref())
-            .map_err(|e| SyncEngineError::Crypto(format!("Failed to read signing key file: {}", e)))?;
+        let bytes = std::fs::read(path.as_ref()).map_err(|e| {
+            SyncEngineError::Crypto(format!("Failed to read signing key file: {}", e))
+        })?;
         Self::from_bytes(&bytes, key_id)
     }
 
@@ -44,7 +46,9 @@ impl SigningEngine {
     }
 
     pub fn sign(&self, data: &[u8]) -> SyncResult<Vec<u8>> {
-        let key = self.signing_key.lock()
+        let key = self
+            .signing_key
+            .lock()
             .map_err(|e| SyncEngineError::Crypto(format!("Signing key lock error: {}", e)))?;
         let signature = key.sign(data);
         Ok(signature.to_bytes().to_vec())
@@ -54,20 +58,28 @@ impl SigningEngine {
         let signature = Signature::from_slice(signature_bytes)
             .map_err(|e| SyncEngineError::Crypto(format!("Invalid signature bytes: {}", e)))?;
 
-        self.verifying_key.verify(data, &signature)
+        self.verifying_key
+            .verify(data, &signature)
             .map_err(|e| SyncEngineError::Crypto(format!("Signature verification failed: {}", e)))
     }
 
-    pub fn verify_with_key(data: &[u8], signature_bytes: &[u8], public_key: &[u8]) -> SyncResult<()> {
+    pub fn verify_with_key(
+        data: &[u8],
+        signature_bytes: &[u8],
+        public_key: &[u8],
+    ) -> SyncResult<()> {
         let verifying_key = VerifyingKey::from_bytes(
-            public_key.try_into()
-                .map_err(|_| SyncEngineError::Crypto("Invalid public key length".into()))?
-        ).map_err(|e| SyncEngineError::Crypto(format!("Invalid public key: {}", e)))?;
+            public_key
+                .try_into()
+                .map_err(|_| SyncEngineError::Crypto("Invalid public key length".into()))?,
+        )
+        .map_err(|e| SyncEngineError::Crypto(format!("Invalid public key: {}", e)))?;
 
         let signature = Signature::from_slice(signature_bytes)
             .map_err(|e| SyncEngineError::Crypto(format!("Invalid signature bytes: {}", e)))?;
 
-        verifying_key.verify(data, &signature)
+        verifying_key
+            .verify(data, &signature)
             .map_err(|e| SyncEngineError::Crypto(format!("Signature verification failed: {}", e)))
     }
 

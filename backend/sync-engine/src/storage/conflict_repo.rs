@@ -72,11 +72,10 @@ impl ConflictRepo {
     }
 
     pub async fn count_open(&self) -> SyncResult<i64> {
-        let row: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM sync.sync_conflicts WHERE status = 'open'",
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM sync.sync_conflicts WHERE status = 'open'")
+                .fetch_one(&self.pool)
+                .await?;
         Ok(row.0)
     }
 }

@@ -44,11 +44,7 @@ impl IsolationEngine {
         Self
     }
 
-    pub fn create_isolation_plan(
-        &self,
-        zone_id: &str,
-        duration_secs: u64,
-    ) -> IsolationPlan {
+    pub fn create_isolation_plan(&self, zone_id: &str, duration_secs: u64) -> IsolationPlan {
         let level = if duration_secs > 604800 {
             super::AutonomyLevel::SovereignIsolation
         } else if duration_secs > 86400 {
@@ -62,7 +58,9 @@ impl IsolationEngine {
         let locality = match level {
             super::AutonomyLevel::SovereignIsolation => DataLocality::SovereignDataOnly,
             super::AutonomyLevel::AutonomousOperation => DataLocality::FullReplica,
-            super::AutonomyLevel::LimitedConnectivity => DataLocality::CachedWithTtl(duration_secs * 2),
+            super::AutonomyLevel::LimitedConnectivity => {
+                DataLocality::CachedWithTtl(duration_secs * 2)
+            }
             super::AutonomyLevel::FullyConnected => DataLocality::LocalOnly,
             super::AutonomyLevel::EmergencyMode => DataLocality::LocalOnly,
         };

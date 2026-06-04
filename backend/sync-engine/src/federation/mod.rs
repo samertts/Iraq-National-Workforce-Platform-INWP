@@ -113,8 +113,8 @@ pub struct PriorityWindow {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum CompressionPolicy {
-    Maximum,   // zstd L19
-    Balanced,  // zstd L3
-    Minimum,   // no compression
-    Adaptive,  // based on bandwidth
+    Maximum,  // zstd L19
+    Balanced, // zstd L3
+    Minimum,  // no compression
+    Adaptive, // based on bandwidth
 }

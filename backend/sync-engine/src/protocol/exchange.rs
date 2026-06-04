@@ -2,7 +2,7 @@ use crate::core::merkle::MerkleTree;
 use crate::core::types::SyncPhase;
 use crate::error::SyncResult;
 use crate::protocol::SyncSession;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 #[derive(Debug)]
 pub struct MerkleExchangeResult {

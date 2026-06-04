@@ -59,16 +59,17 @@ pub struct RecoveryStep {
     pub rollback_action: Option<String>,
 }
 
-pub fn simulate_disaster_recovery(
-    plan: &DisasterRecoveryPlan,
-) -> DisasterRecoveryResult {
+pub fn simulate_disaster_recovery(plan: &DisasterRecoveryPlan) -> DisasterRecoveryResult {
     info!(plan = %plan.plan_id, name = %plan.name, "Disaster recovery simulation started");
     let mut issues = Vec::new();
 
     for step in &plan.recovery_procedure {
         let success = rand::random::<f64>() > 0.1;
         if !success {
-            issues.push(format!("Step {} ({}) failed — attempting rollback", step.step_number, step.action));
+            issues.push(format!(
+                "Step {} ({}) failed — attempting rollback",
+                step.step_number, step.action
+            ));
         }
     }
 
@@ -78,7 +79,11 @@ pub fn simulate_disaster_recovery(
         total_steps: plan.recovery_procedure.len() as u32,
         failed_steps: issues.len() as u32,
         total_duration_ms: plan.estimated_rtp,
-        data_loss_bytes: if plan.estimated_rpo > 0 { plan.estimated_rpo * 1024 } else { 0 },
+        data_loss_bytes: if plan.estimated_rpo > 0 {
+            plan.estimated_rpo * 1024
+        } else {
+            0
+        },
         issues,
     }
 }
@@ -137,9 +142,11 @@ impl RecoveryTestEngine {
             recovered,
             recovery_time_ms: recovery_time,
             data_integrity_verified: recovered,
-            state_consistent: recovered && !matches!(scenario.failure_type, FailureType::ReplayDivergence),
+            state_consistent: recovered
+                && !matches!(scenario.failure_type, FailureType::ReplayDivergence),
             replay_verified: !matches!(scenario.failure_type, FailureType::ReplayDivergence),
-            corruption_contained: !matches!(scenario.failure_type, FailureType::DataCorruption) || recovered,
+            corruption_contained: !matches!(scenario.failure_type, FailureType::DataCorruption)
+                || recovered,
             issues_during_recovery: issues,
         }
     }

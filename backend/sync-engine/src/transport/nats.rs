@@ -9,15 +9,14 @@ pub struct NatsTransport {
 
 impl NatsTransport {
     pub async fn connect(url: &str) -> SyncResult<Self> {
-        let client = async_nats::connect(url).await.map_err(|e| SyncEngineError::Nats(e.into()))?;
+        let client = async_nats::connect(url)
+            .await
+            .map_err(|e| SyncEngineError::Nats(e.into()))?;
         info!(url = %url, "Connected to NATS");
 
         let jetstream = Some(jetstream::new(client.clone()));
 
-        Ok(Self {
-            client,
-            jetstream,
-        })
+        Ok(Self { client, jetstream })
     }
 
     pub fn client(&self) -> &async_nats::Client {

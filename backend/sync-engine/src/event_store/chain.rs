@@ -79,7 +79,10 @@ impl EventChain {
             domain_id,
             partition_key: partition_key.into(),
             chain: Vec::new(),
-            chain_head: Sha256::new().chain_update(b"INWP_GENESIS").finalize().to_vec(),
+            chain_head: Sha256::new()
+                .chain_update(b"INWP_GENESIS")
+                .finalize()
+                .to_vec(),
             chain_depth: 0,
             sealed: false,
         }
@@ -118,7 +121,10 @@ impl EventChain {
             };
         }
 
-        let genesis = Sha256::new().chain_update(b"INWP_GENESIS").finalize().to_vec();
+        let genesis = Sha256::new()
+            .chain_update(b"INWP_GENESIS")
+            .finalize()
+            .to_vec();
         if self.chain[0].previous_hash != genesis {
             issues.push("First event does not link to genesis".into());
         }
@@ -147,7 +153,8 @@ impl EventChain {
     }
 
     pub fn replay_from(&self, from_depth: u64) -> Vec<&ChainedEvent> {
-        self.chain.iter()
+        self.chain
+            .iter()
             .filter(|e| e.chain_depth >= from_depth)
             .collect()
     }

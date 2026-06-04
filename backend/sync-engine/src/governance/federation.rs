@@ -140,21 +140,32 @@ impl FederationGovernance {
     pub fn check_boundary(&self, source: &str, target: &str) -> PolicyEvalResult {
         let source_domain = match self.domain_registry.get(source) {
             Some(d) => d,
-            None => return PolicyEvalResult::Violation(GovernanceViolation {
-                policy_id: uuid::Uuid::nil(),
-                policy_name: "FederationBoundary".into(),
-                severity: PolicySeverity::Critical,
-                message: format!("Source domain '{}' not registered in federation governance", source),
-                context: {
-                    let mut m = HashMap::new();
-                    m.insert("source".into(), source.into());
-                    m
-                },
-                remediations: vec![format!("Register domain '{}' in federation governance", source)],
-            }),
+            None => {
+                return PolicyEvalResult::Violation(GovernanceViolation {
+                    policy_id: uuid::Uuid::nil(),
+                    policy_name: "FederationBoundary".into(),
+                    severity: PolicySeverity::Critical,
+                    message: format!(
+                        "Source domain '{}' not registered in federation governance",
+                        source
+                    ),
+                    context: {
+                        let mut m = HashMap::new();
+                        m.insert("source".into(), source.into());
+                        m
+                    },
+                    remediations: vec![format!(
+                        "Register domain '{}' in federation governance",
+                        source
+                    )],
+                })
+            }
         };
 
-        if source_domain.restricted_interactions.contains(&target.to_string()) {
+        if source_domain
+            .restricted_interactions
+            .contains(&target.to_string())
+        {
             return PolicyEvalResult::Violation(GovernanceViolation {
                 policy_id: uuid::Uuid::nil(),
                 policy_name: "FederationBoundary".into(),
@@ -268,7 +279,10 @@ impl FederationGovernance {
     }
 
     pub fn list_active_routes(&self) -> Vec<&CrossDomainRoute> {
-        self.cross_domain_routes.iter().filter(|r| r.enabled).collect()
+        self.cross_domain_routes
+            .iter()
+            .filter(|r| r.enabled)
+            .collect()
     }
 }
 

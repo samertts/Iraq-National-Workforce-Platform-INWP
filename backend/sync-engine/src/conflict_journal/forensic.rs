@@ -29,7 +29,8 @@ impl ForensicAnalyzer {
         }
 
         NodeBehaviorReport {
-            most_conflicted_node: conflict_count.iter()
+            most_conflicted_node: conflict_count
+                .iter()
                 .max_by_key(|(_, c)| *c)
                 .map(|(id, _)| *id),
             total_conflicts: entries.len() as u64,
@@ -38,7 +39,10 @@ impl ForensicAnalyzer {
         }
     }
 
-    pub fn detect_conflict_clusters(&self, entries: &[ConflictJournalEntry]) -> Vec<ConflictCluster> {
+    pub fn detect_conflict_clusters(
+        &self,
+        entries: &[ConflictJournalEntry],
+    ) -> Vec<ConflictCluster> {
         let mut clusters: HashMap<String, Vec<&ConflictJournalEntry>> = HashMap::new();
 
         for entry in entries {
@@ -46,7 +50,8 @@ impl ForensicAnalyzer {
             clusters.entry(key).or_default().push(entry);
         }
 
-        clusters.into_iter()
+        clusters
+            .into_iter()
             .filter(|(_, entries)| entries.len() > 2)
             .map(|(key, entries)| {
                 let conflict_count = entries.len() as u32;

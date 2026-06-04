@@ -10,7 +10,11 @@ pub struct PartitionKey {
 }
 
 impl PartitionKey {
-    pub fn new(ministry_id: uuid::Uuid, entity_type: impl Into<String>, time_bucket: impl Into<String>) -> Self {
+    pub fn new(
+        ministry_id: uuid::Uuid,
+        entity_type: impl Into<String>,
+        time_bucket: impl Into<String>,
+    ) -> Self {
         Self {
             ministry_id,
             entity_type: entity_type.into(),
@@ -46,7 +50,11 @@ impl PartitionKey {
 
 impl fmt::Display for PartitionKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}/{}/{}", self.ministry_id, self.entity_type, self.time_bucket)
+        write!(
+            f,
+            "{}/{}/{}",
+            self.ministry_id, self.entity_type, self.time_bucket
+        )
     }
 }
 

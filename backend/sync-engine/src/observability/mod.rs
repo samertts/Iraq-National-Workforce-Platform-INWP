@@ -24,8 +24,9 @@ pub fn init_observability(config: &ObservabilityConfig) -> SyncResult<Observabil
         .json()
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .map_err(|e| crate::error::SyncEngineError::Config(format!("Tracing setup failed: {}", e)))?;
+    tracing::subscriber::set_global_default(subscriber).map_err(|e| {
+        crate::error::SyncEngineError::Config(format!("Tracing setup failed: {}", e))
+    })?;
 
     Ok(ObservabilityGuard)
 }

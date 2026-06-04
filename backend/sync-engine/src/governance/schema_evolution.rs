@@ -110,9 +110,8 @@ impl SchemaEvolutionEngine {
         }
 
         if evolution.requires_federation_negotiation && !evolution.approved {
-            federation_impact.push(
-                "Evolution requires federation negotiation before deployment".into(),
-            );
+            federation_impact
+                .push("Evolution requires federation negotiation before deployment".into());
         }
 
         if !evolution.replay_safe {
@@ -150,18 +149,23 @@ impl SchemaEvolutionEngine {
         &mut self,
         evolution_id: uuid::Uuid,
     ) -> SyncResult<EvolutionExecution> {
-        let evolution = self.active_evolutions
+        let evolution = self
+            .active_evolutions
             .iter()
             .find(|e| e.evolution_id == evolution_id)
-            .ok_or_else(|| crate::error::SyncEngineError::Internal(
-                format!("Evolution '{}' not found in active evolutions", evolution_id)
-            ))?
+            .ok_or_else(|| {
+                crate::error::SyncEngineError::Internal(format!(
+                    "Evolution '{}' not found in active evolutions",
+                    evolution_id
+                ))
+            })?
             .clone();
 
         if !evolution.approved {
-            return Err(crate::error::SyncEngineError::Internal(
-                format!("Evolution '{}' has not been approved", evolution_id)
-            ));
+            return Err(crate::error::SyncEngineError::Internal(format!(
+                "Evolution '{}' has not been approved",
+                evolution_id
+            )));
         }
 
         let execution = EvolutionExecution {
@@ -210,7 +214,10 @@ impl SchemaEvolutionEngine {
         proposed: &semver::Version,
         current: &semver::Version,
     ) -> FederationNegotiation {
-        let key = format!("{}:{}->{}", contract_id, proposing_domain, responding_domain);
+        let key = format!(
+            "{}:{}->{}",
+            contract_id, proposing_domain, responding_domain
+        );
         let negotiation = FederationNegotiation {
             contract_id: contract_id.to_string(),
             proposing_domain: proposing_domain.to_string(),

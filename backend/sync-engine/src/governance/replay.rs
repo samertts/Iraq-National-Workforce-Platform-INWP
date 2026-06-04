@@ -95,18 +95,26 @@ impl ReplayGovernance {
     pub fn check_determinism(&self, stream_id: &str) -> PolicyEvalResult {
         let stream = match self.stream_registry.get(stream_id) {
             Some(s) => s,
-            None => return PolicyEvalResult::Violation(GovernanceViolation {
-                policy_id: uuid::Uuid::nil(),
-                policy_name: "ReplayDeterminism".into(),
-                severity: PolicySeverity::Error,
-                message: format!("Stream '{}' not registered for replay governance", stream_id),
-                context: {
-                    let mut m = HashMap::new();
-                    m.insert("stream_id".into(), stream_id.into());
-                    m
-                },
-                remediations: vec![format!("Register stream '{}' in replay governance", stream_id)],
-            }),
+            None => {
+                return PolicyEvalResult::Violation(GovernanceViolation {
+                    policy_id: uuid::Uuid::nil(),
+                    policy_name: "ReplayDeterminism".into(),
+                    severity: PolicySeverity::Error,
+                    message: format!(
+                        "Stream '{}' not registered for replay governance",
+                        stream_id
+                    ),
+                    context: {
+                        let mut m = HashMap::new();
+                        m.insert("stream_id".into(), stream_id.into());
+                        m
+                    },
+                    remediations: vec![format!(
+                        "Register stream '{}' in replay governance",
+                        stream_id
+                    )],
+                })
+            }
         };
 
         if !stream.deterministic {
@@ -135,7 +143,12 @@ impl ReplayGovernance {
         PolicyEvalResult::Pass
     }
 
-    pub fn verify_replay(&mut self, stream_id: &str, event_count: u64, checksum: &[u8]) -> ReplayVerification {
+    pub fn verify_replay(
+        &mut self,
+        stream_id: &str,
+        event_count: u64,
+        checksum: &[u8],
+    ) -> ReplayVerification {
         let mut issues = Vec::new();
         let mut checksum_match = true;
         let mut determinism_verified = true;

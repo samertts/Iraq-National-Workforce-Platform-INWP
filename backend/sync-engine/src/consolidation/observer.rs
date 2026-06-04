@@ -129,12 +129,7 @@ impl ArchitectureObserver {
         };
 
         if drift {
-            info!(
-                ?dimension,
-                score,
-                threshold,
-                "Architecture drift detected"
-            );
+            info!(?dimension, score, threshold, "Architecture drift detected");
         }
 
         self.observations.push(obs);
@@ -150,7 +145,9 @@ impl ArchitectureObserver {
         let surv = self.average_for(ObservationDimension::Survivability);
         let deg = self.average_for(ObservationDimension::Degradation);
 
-        let overall = (arch + sync + (1.0 - replay) + fed + topo + (1.0 - entropy) + surv + (1.0 - deg)) / 8.0;
+        let overall =
+            (arch + sync + (1.0 - replay) + fed + topo + (1.0 - entropy) + surv + (1.0 - deg))
+                / 8.0;
 
         PlatformHealthScore {
             overall,
@@ -167,7 +164,9 @@ impl ArchitectureObserver {
     }
 
     fn average_for(&self, dimension: ObservationDimension) -> f64 {
-        let obs: Vec<&ArchitectureObservation> = self.observations.iter()
+        let obs: Vec<&ArchitectureObservation> = self
+            .observations
+            .iter()
             .filter(|o| o.dimension == dimension)
             .collect();
         if obs.is_empty() {
@@ -182,15 +181,21 @@ impl EntropyEngine {
         Self
     }
 
-    pub fn analyze_dependency_entropy(&self, dependency_count: u64, cycle_count: u64, coupling_scores: &[f64]) -> EntropyReport {
+    pub fn analyze_dependency_entropy(
+        &self,
+        dependency_count: u64,
+        cycle_count: u64,
+        coupling_scores: &[f64],
+    ) -> EntropyReport {
         let avg_coupling = if !coupling_scores.is_empty() {
             coupling_scores.iter().sum::<f64>() / coupling_scores.len() as f64
         } else {
             0.0
         };
 
-        let entropy = (dependency_count as f64 * 0.1 + cycle_count as f64 * 0.3 + avg_coupling * 0.6)
-            / (1.0 + dependency_count as f64 * 0.01);
+        let entropy =
+            (dependency_count as f64 * 0.1 + cycle_count as f64 * 0.3 + avg_coupling * 0.6)
+                / (1.0 + dependency_count as f64 * 0.01);
 
         let mut contributors = Vec::new();
         if cycle_count > 0 {
@@ -217,7 +222,12 @@ impl DriftEngine {
         Self
     }
 
-    pub fn analyze_drift(&self, dimension: ObservationDimension, current: f64, threshold: f64) -> DriftReport {
+    pub fn analyze_drift(
+        &self,
+        dimension: ObservationDimension,
+        current: f64,
+        threshold: f64,
+    ) -> DriftReport {
         let detected = current > threshold;
         DriftReport {
             dimension,
@@ -242,13 +252,29 @@ impl SurvivabilityScorer {
         recovery_time_ms: u64,
         federation_nodes: u64,
     ) -> SurvivabilityScore {
-        let recovery = if recovery_time_ms < 5000 { 1.0 } else if recovery_time_ms < 30000 { 0.7 } else if recovery_time_ms < 300000 { 0.4 } else { 0.1 };
+        let recovery = if recovery_time_ms < 5000 {
+            1.0
+        } else if recovery_time_ms < 30000 {
+            0.7
+        } else if recovery_time_ms < 300000 {
+            0.4
+        } else {
+            0.1
+        };
         let checkpoint = (checkpoint_count as f64 / 10.0).min(1.0);
-        let fed_resilience = if isolated_zones == 0 { 1.0 } else { (1.0 - isolated_zones as f64 / federation_nodes.max(1) as f64).max(0.0) };
+        let fed_resilience = if isolated_zones == 0 {
+            1.0
+        } else {
+            (1.0 - isolated_zones as f64 / federation_nodes.max(1) as f64).max(0.0)
+        };
         let corruption = if checkpoint_count > 0 { 0.8 } else { 0.3 };
         let offline = if checkpoint_count > 5 { 0.9 } else { 0.5 };
 
-        let overall = recovery * 0.3 + checkpoint * 0.2 + fed_resilience * 0.2 + corruption * 0.15 + offline * 0.15;
+        let overall = recovery * 0.3
+            + checkpoint * 0.2
+            + fed_resilience * 0.2
+            + corruption * 0.15
+            + offline * 0.15;
 
         SurvivabilityScore {
             overall,

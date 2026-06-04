@@ -9,7 +9,9 @@ pub struct SplitBrainResolver {
 
 impl SplitBrainResolver {
     pub fn new(max_healing_attempts: u32) -> Self {
-        Self { max_healing_attempts }
+        Self {
+            max_healing_attempts,
+        }
     }
 
     pub fn detect_split_brain(
@@ -59,7 +61,9 @@ impl SplitBrainResolver {
         context.recovery_attempts += 1;
 
         // Find the authoritative version (majority or highest authority)
-        let authoritative = diagnosis.divergent_peers.iter()
+        let authoritative = diagnosis
+            .divergent_peers
+            .iter()
             .max_by_key(|p| p.divergent_records);
 
         let authoritiative_root = authoritative
@@ -116,8 +120,10 @@ pub enum HealingStrategy {
 }
 
 fn compute_divergence_depth(local: &MerkleTree, remote: &MerkleTree) -> u32 {
-    let local_keys: std::collections::HashSet<&str> = local.leaves.keys().map(|s| s.as_str()).collect();
-    let remote_keys: std::collections::HashSet<&str> = remote.leaves.keys().map(|s| s.as_str()).collect();
+    let local_keys: std::collections::HashSet<&str> =
+        local.leaves.keys().map(|s| s.as_str()).collect();
+    let remote_keys: std::collections::HashSet<&str> =
+        remote.leaves.keys().map(|s| s.as_str()).collect();
 
     let symmetric_diff = local_keys.symmetric_difference(&remote_keys).count();
     symmetric_diff as u32

@@ -25,12 +25,17 @@ impl CorruptionScanner {
         }
     }
 
-    pub fn scan_batch(&mut self, records: &[SyncRecord], source: &NodeIdentity) -> Vec<CorruptionEvent> {
+    pub fn scan_batch(
+        &mut self,
+        records: &[SyncRecord],
+        source: &NodeIdentity,
+    ) -> Vec<CorruptionEvent> {
         let mut events = Vec::new();
 
         for record in records {
             // Check for duplicate record_ids within batch
-            let duplicate_count = records.iter()
+            let duplicate_count = records
+                .iter()
                 .filter(|r| r.record_id == record.record_id)
                 .count();
             if duplicate_count > 1 {

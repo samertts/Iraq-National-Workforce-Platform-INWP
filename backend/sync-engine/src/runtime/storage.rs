@@ -1,5 +1,6 @@
 use sha2::Digest;
-use tracing::info;
+use std::collections::VecDeque;
+use tracing::{info, warn};
 
 /// Storage governance — append-only enforcement, compaction governance, snapshot management,
 /// quota enforcement, and immutable retention for the sovereign runtime.
@@ -101,12 +102,46 @@ pub enum PruningStrategy {
     GovernanceApproved,
 }
 
+/// Storage pressure analysis — tracks trends, predicts exhaustion, and recommends action.
+pub struct StoragePressureEngine {
+    history: VecDeque<PressureSample>,
+    max_samples: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct PressureSample {
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub usage_ratio: f64,
+    pub growth_rate_per_sec: f64,
+}
+
+#[derive(Debug)]
+pub struct PressureReport {
+    pub current_ratio: f64,
+    pub trend: PressureTrend,
+    pub estimated_exhaustion_hours: Option<f64>,
+    pub growth_rate_per_hour: f64,
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PressureTrend {
+    Declining,
+    Stable,
+    Growing,
+    Critical,
+}
+
 impl StorageGovernor {
     pub fn new() -> Self {
         Self
     }
 
-    pub fn create_policy(policy_type: StoragePolicyType, retention_days: u64, max_size: u64) -> StoragePolicy {
+    pub fn create_policy(
+        policy_type: StoragePolicyType,
+        retention_days: u64,
+        max_size: u64,
+    ) -> StoragePolicy {
         StoragePolicy {
             policy_id: uuid::Uuid::now_v7(),
             policy_type,
@@ -114,7 +149,10 @@ impl StorageGovernor {
             max_size_bytes: max_size,
             compaction_enabled: true,
             snapshot_interval_secs: 3600,
-            encryption_required: matches!(policy_type, StoragePolicyType::AuditLog | StoragePolicyType::ConflictJournal),
+            encryption_required: matches!(
+                policy_type,
+                StoragePolicyType::AuditLog | StoragePolicyType::ConflictJournal
+            ),
         }
     }
 
@@ -128,12 +166,96 @@ impl StorageGovernor {
     }
 }
 
+impl StoragePressureEngine {
+    pub fn new(max_samples: usize) -> Self {
+        Self {
+            history: VecDeque::with_capacity(max_samples),
+            max_samples,
+        }
+    }
+
+    pub fn record_sample(&mut self, ratio: f64, growth_per_sec: f64) {
+        if self.history.len() >= self.max_samples {
+            self.history.pop_front();
+        }
+        self.history.push_back(PressureSample {
+            timestamp: chrono::Utc::now(),
+            usage_ratio: ratio,
+            growth_rate_per_sec: growth_per_sec,
+        });
+    }
+
+    pub fn analyze(&self) -> PressureReport {
+        let current_ratio = self.history.back().map(|s| s.usage_ratio).unwrap_or(0.0);
+        let avg_growth = if self.history.len() >= 2 {
+            let first = self.history.front().unwrap();
+            let last = self.history.back().unwrap();
+            let elapsed = (last.timestamp - first.timestamp).num_seconds() as f64;
+            if elapsed > 0.0 {
+                (last.usage_ratio - first.usage_ratio) / elapsed * 3600.0
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
+
+        let trend = if avg_growth < -0.01 {
+            PressureTrend::Declining
+        } else if avg_growth > 0.05 {
+            PressureTrend::Critical
+        } else if avg_growth > 0.01 {
+            PressureTrend::Growing
+        } else {
+            PressureTrend::Stable
+        };
+
+        let mut recommendations = Vec::new();
+        if current_ratio > 0.85 {
+            recommendations.push("Initiate emergency compaction".into());
+        }
+        if current_ratio > 0.75 {
+            recommendations.push("Review retention policies for pruning opportunities".into());
+        }
+        if matches!(trend, PressureTrend::Critical) {
+            recommendations.push("Immediate capacity expansion required".into());
+        }
+
+        let exhaustion_hours = if avg_growth > 0.0 {
+            let remaining = 1.0 - current_ratio;
+            Some(remaining / (avg_growth / 3600.0).max(1e-10))
+        } else {
+            None
+        };
+
+        PressureReport {
+            current_ratio,
+            trend,
+            estimated_exhaustion_hours: exhaustion_hours,
+            growth_rate_per_hour: avg_growth,
+            recommendations,
+        }
+    }
+}
+
+impl Default for StoragePressureEngine {
+    fn default() -> Self {
+        Self::new(100)
+    }
+}
+
 impl SnapshotEngine {
     pub fn new() -> Self {
         Self
     }
 
-    pub fn create_snapshot(&self, domain: &str, stream_id: &str, event_count: u64, depth: u64) -> SnapshotManifest {
+    pub fn create_snapshot(
+        &self,
+        domain: &str,
+        stream_id: &str,
+        event_count: u64,
+        depth: u64,
+    ) -> SnapshotManifest {
         let hash = sha2::Sha256::new()
             .chain_update(domain.as_bytes())
             .chain_update(stream_id.as_bytes())
@@ -165,8 +287,42 @@ impl CompactionEngine {
             target: target.to_string(),
             compaction_type: ctype,
             estimated_space_savings: savings,
-            replay_safe: true,
+            replay_safe: matches!(
+                ctype,
+                CompactionType::CrdtMerge | CompactionType::SnapshotPruning
+            ),
         }
+    }
+
+    /// Verify compaction safety by checking that the target type is replay-safe
+    /// and that space savings are within expected bounds.
+    pub fn verify_compaction(&self, plan: &CompactionPlan, actual_savings: u64) -> Vec<String> {
+        let mut issues = Vec::new();
+        if !plan.replay_safe {
+            let msg = format!(
+                "Compaction type {:?} on '{}' is not replay-safe",
+                plan.compaction_type, plan.target
+            );
+            warn!("{}", msg);
+            issues.push(msg);
+        }
+        if actual_savings > plan.estimated_space_savings * 2 {
+            let msg = format!(
+                "Actual savings {} exceeds double estimate {} — possible data loss",
+                actual_savings, plan.estimated_space_savings
+            );
+            warn!("{}", msg);
+            issues.push(msg);
+        }
+        if actual_savings < plan.estimated_space_savings / 10 {
+            let msg = format!(
+                "Actual savings {} is <10% of estimate {} — compaction ineffective",
+                actual_savings, plan.estimated_space_savings
+            );
+            warn!("{}", msg);
+            issues.push(msg);
+        }
+        issues
     }
 }
 
@@ -176,7 +332,11 @@ impl QuotaEnforcer {
     }
 
     pub fn check_quota(domain: &str, used: u64, quota: u64) -> QuotaState {
-        let ratio = if quota > 0 { used as f64 / quota as f64 } else { 0.0 };
+        let ratio = if quota > 0 {
+            used as f64 / quota as f64
+        } else {
+            0.0
+        };
         let action = if ratio >= 1.0 {
             QuotaAction::BlockWrites
         } else if ratio >= 0.95 {

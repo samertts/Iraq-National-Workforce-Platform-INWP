@@ -1,5 +1,5 @@
 use super::{ReplayVerificationContext, ReplayVerificationResult};
-use crate::core::merkle::{MerkleTree, compute_record_hash};
+use crate::core::merkle::{compute_record_hash, MerkleTree};
 use crate::core::types::SyncRecord;
 use crate::error::SyncResult;
 

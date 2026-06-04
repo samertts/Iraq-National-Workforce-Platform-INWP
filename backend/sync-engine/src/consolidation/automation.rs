@@ -56,14 +56,19 @@ impl AutomationEngine {
             ("determinism_verifier", true),
         ];
 
-        let results: Vec<ValidationResult> = validators.into_iter()
+        let results: Vec<ValidationResult> = validators
+            .into_iter()
             .map(|(name, passed)| {
                 info!(validator = %name, passed, "Validation check complete");
                 ValidationResult {
                     validator: name.to_string(),
                     passed,
                     duration_ms: 1000,
-                    findings: if passed { vec![] } else { vec![format!("{} failed", name)] },
+                    findings: if passed {
+                        vec![]
+                    } else {
+                        vec![format!("{} failed", name)]
+                    },
                 }
             })
             .collect();
@@ -86,15 +91,51 @@ impl SovereignCIEngine {
 
     pub fn execute_pipeline(&self, commit_hash: &str) -> CIRunResult {
         let stages = vec![
-            CIStage { name: "Architecture Governance Check".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Deterministic Build".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Supply Chain Verification".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Replay Safety Validation".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Schema Compatibility Check".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Federation Boundary Validation".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Chaos Readiness Verification".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Deployment Policy Check".into(), passed: true, warnings: vec![] },
-            CIStage { name: "Artifact Signing".into(), passed: true, warnings: vec![] },
+            CIStage {
+                name: "Architecture Governance Check".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Deterministic Build".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Supply Chain Verification".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Replay Safety Validation".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Schema Compatibility Check".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Federation Boundary Validation".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Chaos Readiness Verification".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Deployment Policy Check".into(),
+                passed: true,
+                warnings: vec![],
+            },
+            CIStage {
+                name: "Artifact Signing".into(),
+                passed: true,
+                warnings: vec![],
+            },
         ];
 
         let all_passed = stages.iter().all(|s| s.passed);

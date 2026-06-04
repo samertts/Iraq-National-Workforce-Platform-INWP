@@ -14,7 +14,11 @@ impl CheckpointRecoverer {
         }
     }
 
-    pub fn should_checkpoint(&self, events_since_last: u64, time_since_last: chrono::Duration) -> bool {
+    pub fn should_checkpoint(
+        &self,
+        events_since_last: u64,
+        time_since_last: chrono::Duration,
+    ) -> bool {
         events_since_last >= self.checkpoint_interval_events
             || time_since_last.num_seconds() >= self.checkpoint_interval_secs as i64
     }
@@ -25,7 +29,9 @@ impl CheckpointRecoverer {
         current_tree: &MerkleTree,
     ) -> SyncResult<Vec<String>> {
         if checkpoint.is_initial() {
-            return Ok(current_tree.leaves.keys()
+            return Ok(current_tree
+                .leaves
+                .keys()
                 .filter_map(|k| {
                     let parts: Vec<&str> = k.split('/').collect();
                     parts.last().map(|s| s.to_string())

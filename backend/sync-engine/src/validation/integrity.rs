@@ -4,9 +4,7 @@ use crate::error::SyncResult;
 pub struct IntegrityVerifier;
 
 impl IntegrityVerifier {
-    pub fn verify_sync_receipt(
-        receipt: &crate::core::types::BatchReceipt,
-    ) -> SyncResult<bool> {
+    pub fn verify_sync_receipt(receipt: &crate::core::types::BatchReceipt) -> SyncResult<bool> {
         let data = format!(
             "{}:{}:{}:{}:{}",
             receipt.sync_id,
@@ -36,11 +34,12 @@ impl IntegrityVerifier {
 
         for (path, hash) in &tree_before.leaves {
             if !added_records.contains(&tree_before.record_id_from_path(path).unwrap_or_default())
-                && tree_after.get_leaf_hash(
-                    &tree_before.record_id_from_path(path).unwrap_or_default()
-                ) != Some(hash) {
-                    return false;
-                }
+                && tree_after
+                    .get_leaf_hash(&tree_before.record_id_from_path(path).unwrap_or_default())
+                    != Some(hash)
+            {
+                return false;
+            }
         }
 
         true

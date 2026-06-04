@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 pub struct MeshDiscovery {
     node_id: uuid::Uuid,

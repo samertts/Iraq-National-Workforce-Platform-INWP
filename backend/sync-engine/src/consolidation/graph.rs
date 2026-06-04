@@ -136,7 +136,11 @@ impl KnowledgeGraph {
             }
         }
 
-        paths.sort_by(|a, b| b.total_affinity.partial_cmp(&a.total_affinity).unwrap_or(std::cmp::Ordering::Equal));
+        paths.sort_by(|a, b| {
+            b.total_affinity
+                .partial_cmp(&a.total_affinity)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         paths
     }
 
@@ -151,8 +155,14 @@ impl KnowledgeGraph {
 
         let mut adjacency: HashMap<&str, HashSet<&str>> = HashMap::new();
         for edge in &self.edges {
-            adjacency.entry(edge.source.as_str()).or_default().insert(edge.target.as_str());
-            adjacency.entry(edge.target.as_str()).or_default().insert(edge.source.as_str());
+            adjacency
+                .entry(edge.source.as_str())
+                .or_default()
+                .insert(edge.target.as_str());
+            adjacency
+                .entry(edge.target.as_str())
+                .or_default()
+                .insert(edge.source.as_str());
         }
 
         let scc = self.count_strongly_connected();
@@ -204,7 +214,8 @@ impl KnowledgeGraph {
             return Vec::new();
         }
         let threshold = (max_degree as f64 * 0.7) as usize;
-        let mut central: Vec<String> = degree.into_iter()
+        let mut central: Vec<String> = degree
+            .into_iter()
             .filter(|(_, d)| *d >= threshold)
             .map(|(n, _)| n.to_string())
             .collect();
@@ -218,8 +229,13 @@ impl LineageGraph {
         Self
     }
 
-    pub fn trace_lineage(&self, event_id: uuid::Uuid, transformations: Vec<(uuid::Uuid, String, String)>) -> LineagePath {
-        let hops: Vec<LineageHop> = transformations.into_iter()
+    pub fn trace_lineage(
+        &self,
+        event_id: uuid::Uuid,
+        transformations: Vec<(uuid::Uuid, String, String)>,
+    ) -> LineagePath {
+        let hops: Vec<LineageHop> = transformations
+            .into_iter()
             .map(|(eid, transform, domain)| LineageHop {
                 event_id: eid,
                 transformation: transform,
@@ -231,7 +247,10 @@ impl LineageGraph {
 
         LineagePath {
             source_event: event_id.to_string(),
-            target_state: hops.last().map(|h| h.event_id.to_string()).unwrap_or_default(),
+            target_state: hops
+                .last()
+                .map(|h| h.event_id.to_string())
+                .unwrap_or_default(),
             path: hops,
             deterministic,
         }

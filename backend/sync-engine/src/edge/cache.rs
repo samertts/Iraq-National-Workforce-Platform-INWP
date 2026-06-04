@@ -38,12 +38,15 @@ impl EdgeCache {
                 self.cache.remove(&oldest);
             }
         }
-        self.cache.insert(key.into(), CacheEntry {
-            data,
-            inserted_at: chrono::Utc::now(),
-            ttl: self.default_ttl,
-            version,
-        });
+        self.cache.insert(
+            key.into(),
+            CacheEntry {
+                data,
+                inserted_at: chrono::Utc::now(),
+                ttl: self.default_ttl,
+                version,
+            },
+        );
     }
 
     pub fn invalidate(&mut self, key: &str) {
@@ -63,7 +66,8 @@ impl EdgeCache {
     }
 
     fn find_oldest(&self) -> Option<String> {
-        self.cache.iter()
+        self.cache
+            .iter()
             .min_by_key(|(_, e)| e.inserted_at)
             .map(|(k, _)| k.clone())
     }

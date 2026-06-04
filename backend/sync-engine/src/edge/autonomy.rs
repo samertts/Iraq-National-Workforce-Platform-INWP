@@ -13,11 +13,7 @@ pub struct EdgeAutonomyEngine {
 }
 
 impl EdgeAutonomyEngine {
-    pub fn new(
-        node_id: uuid::Uuid,
-        domain_id: uuid::Uuid,
-        region: impl Into<String>,
-    ) -> Self {
+    pub fn new(node_id: uuid::Uuid, domain_id: uuid::Uuid, region: impl Into<String>) -> Self {
         let recovery_fsm = RecoveryStateMachine::new(node_id, region);
 
         Self {

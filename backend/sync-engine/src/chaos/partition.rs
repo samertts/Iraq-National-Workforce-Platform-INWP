@@ -61,7 +61,10 @@ impl PartitionSimulator {
         );
 
         let split_brain = matches!(scenario.partition_type, PartitionType::SplitBrain);
-        let data_divergence = matches!(scenario.partition_type, PartitionType::SplitBrain | PartitionType::AsymmetricPartition);
+        let data_divergence = matches!(
+            scenario.partition_type,
+            PartitionType::SplitBrain | PartitionType::AsymmetricPartition
+        );
         let healing = match scenario.healing_strategy {
             HealingStrategy::AutomaticMerge | HealingStrategy::LastWriterWins => true,
             HealingStrategy::ManualReconciliation | HealingStrategy::SovereignOverride => true,
@@ -73,7 +76,11 @@ impl PartitionSimulator {
             duration_secs: scenario.partition_duration_secs,
             nodes_isolated: scenario.affected_nodes.clone(),
             data_divergence_detected: data_divergence,
-            divergence_bytes: if data_divergence { 1024 * scenario.affected_nodes.len() as u64 } else { 0 },
+            divergence_bytes: if data_divergence {
+                1024 * scenario.affected_nodes.len() as u64
+            } else {
+                0
+            },
             split_brain_detected: split_brain,
             healing_successful: healing,
             reconciliation_time_ms: scenario.partition_duration_secs * 100,
@@ -98,15 +105,26 @@ impl PartitionSimulator {
     ) -> SplitBrainRecoveryReport {
         let mut conflicts = Vec::new();
         for key in divergent_keys {
-            conflicts.push(format!("Key '{}' has diverged across partition boundary", key));
+            conflicts.push(format!(
+                "Key '{}' has diverged across partition boundary",
+                key
+            ));
         }
 
         let recovery_strategy = match partition_scenario.healing_strategy {
-            HealingStrategy::SovereignOverride => "Authoritative domain overrides conflicting state".into(),
-            HealingStrategy::LastWriterWins => "Latest timestamp wins — deterministic resolution".into(),
-            HealingStrategy::AutomaticMerge => "CRDT merge applied to reconcile divergent state".into(),
+            HealingStrategy::SovereignOverride => {
+                "Authoritative domain overrides conflicting state".into()
+            }
+            HealingStrategy::LastWriterWins => {
+                "Latest timestamp wins — deterministic resolution".into()
+            }
+            HealingStrategy::AutomaticMerge => {
+                "CRDT merge applied to reconcile divergent state".into()
+            }
             HealingStrategy::ManualReconciliation => "Quarantined for human operator review".into(),
-            HealingStrategy::Rollback => "Partitioned state rolled back to pre-partition checkpoint".into(),
+            HealingStrategy::Rollback => {
+                "Partitioned state rolled back to pre-partition checkpoint".into()
+            }
         };
 
         SplitBrainRecoveryReport {

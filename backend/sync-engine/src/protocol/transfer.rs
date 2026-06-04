@@ -2,7 +2,7 @@ use crate::core::types::{SyncPhase, SyncRecord};
 use crate::error::SyncResult;
 use crate::protocol::codec::SyncCodec;
 use crate::protocol::SyncSession;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 pub struct DeltaTransferResult {
     pub records_received: Vec<SyncRecord>,
@@ -30,10 +30,7 @@ pub async fn transfer_delta(
     session.advance_phase(SyncPhase::DeltaTransfer);
 
     let batch_size = 1000.min(divergent_records.len());
-    let batch: Vec<String> = divergent_records.iter()
-        .take(batch_size)
-        .cloned()
-        .collect();
+    let batch: Vec<String> = divergent_records.iter().take(batch_size).cloned().collect();
 
     debug!(
         partition = %partition_key,

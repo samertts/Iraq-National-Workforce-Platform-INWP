@@ -9,7 +9,11 @@ pub struct EventValidator {
 }
 
 impl EventValidator {
-    pub fn new(signing_engine: SigningEngine, max_event_size: u64, max_event_age_seconds: i64) -> Self {
+    pub fn new(
+        signing_engine: SigningEngine,
+        max_event_size: u64,
+        max_event_age_seconds: i64,
+    ) -> Self {
         Self {
             signing_engine,
             max_event_size,
@@ -52,7 +56,8 @@ impl EventValidator {
         if event.signature.is_empty() {
             return Err(SyncEngineError::Validation("Event has no signature".into()));
         }
-        self.signing_engine.verify(&event.payload, &event.signature)
+        self.signing_engine
+            .verify(&event.payload, &event.signature)
             .map_err(|_| SyncEngineError::Validation("Event signature verification failed".into()))
     }
 

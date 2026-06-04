@@ -139,11 +139,11 @@ impl MigrationGovernance {
                 if policy.require_replay_safe && !migration.replay_safe {
                     issues.push(MigrationIssue {
                         severity: IssueSeverity::Warning,
-                        message: format!(
-                            "Migration '{}' is not marked replay-safe",
-                            migration_id
+                        message: format!("Migration '{}' is not marked replay-safe", migration_id),
+                        remediation: Some(
+                            "Mark migration as replay-safe or provide replay compatibility proof"
+                                .into(),
                         ),
-                        remediation: Some("Mark migration as replay-safe or provide replay compatibility proof".into()),
                     });
                     replay_compatible = false;
                 }
@@ -173,18 +173,17 @@ impl MigrationGovernance {
 
             let mut checksum_valid = true;
             if let Some(policy) = self.migration_policies.first() {
-                if policy.require_checksum_verification
-                    && migration.checksum.is_empty() {
-                        issues.push(MigrationIssue {
-                            severity: IssueSeverity::Warning,
-                            message: format!(
-                                "Migration '{}' has no checksum for integrity verification",
-                                migration_id
-                            ),
-                            remediation: Some("Generate and attach a SHA-256 checksum".into()),
-                        });
-                        checksum_valid = false;
-                    }
+                if policy.require_checksum_verification && migration.checksum.is_empty() {
+                    issues.push(MigrationIssue {
+                        severity: IssueSeverity::Warning,
+                        message: format!(
+                            "Migration '{}' has no checksum for integrity verification",
+                            migration_id
+                        ),
+                        remediation: Some("Generate and attach a SHA-256 checksum".into()),
+                    });
+                    checksum_valid = false;
+                }
             }
 
             if !checksum_valid {
@@ -193,14 +192,19 @@ impl MigrationGovernance {
         } else {
             issues.push(MigrationIssue {
                 severity: IssueSeverity::Blocker,
-                message: format!("Migration '{}' is not registered in the migration registry", migration_id),
+                message: format!(
+                    "Migration '{}' is not registered in the migration registry",
+                    migration_id
+                ),
                 remediation: Some("Register the migration before attempting deployment".into()),
             });
         }
 
         MigrationSafetyReport {
             migration_id: migration_id.to_string(),
-            safe: issues.iter().all(|i| matches!(i.severity, IssueSeverity::Info | IssueSeverity::Warning)),
+            safe: issues
+                .iter()
+                .all(|i| matches!(i.severity, IssueSeverity::Info | IssueSeverity::Warning)),
             issues,
             replay_compatible,
             rollback_available,
@@ -221,7 +225,8 @@ impl MigrationGovernance {
     }
 
     pub fn list_pending_migrations(&self) -> Vec<&MigrationRecord> {
-        let executed: Vec<&str> = self.execution_history
+        let executed: Vec<&str> = self
+            .execution_history
             .iter()
             .filter(|e| matches!(e.status, ExecutionStatus::Completed))
             .map(|e| e.migration_id.as_str())

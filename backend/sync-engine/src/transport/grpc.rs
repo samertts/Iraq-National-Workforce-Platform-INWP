@@ -3,8 +3,8 @@ use crate::error::SyncResult;
 use crate::protocol::SyncSession;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tokio::sync::mpsc;
+use tokio::sync::RwLock;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::info;
@@ -15,13 +15,11 @@ pub mod proto {
 
 use proto::sync_service_server::{SyncService, SyncServiceServer};
 use proto::{
-    SyncRequest, SyncResponse, MerkleRootRequest, MerkleRootResponse,
-    DeltaRequest, DeltaResponse, ApplyDeltaRequest, ApplyDeltaResponse,
-    ResolveConflictRequest, ResolveConflictResponse,
-    StatusRequest, StatusResponse, NodeInfoRequest,
-    PeersRequest, PeersResponse, Heartbeat, HeartbeatAck,
-    ReplayRequest, ReplayEvent, RecoveryStateRequest, RecoveryStateResponse,
-    NodeIdentity,
+    ApplyDeltaRequest, ApplyDeltaResponse, DeltaRequest, DeltaResponse, Heartbeat, HeartbeatAck,
+    MerkleRootRequest, MerkleRootResponse, NodeIdentity, NodeInfoRequest, PeersRequest,
+    PeersResponse, RecoveryStateRequest, RecoveryStateResponse, ReplayEvent, ReplayRequest,
+    ResolveConflictRequest, ResolveConflictResponse, StatusRequest, StatusResponse, SyncRequest,
+    SyncResponse,
 };
 
 #[derive(Clone)]
@@ -47,8 +45,9 @@ impl GrpcServer {
     }
 
     pub async fn serve(self, addr: &str) -> SyncResult<()> {
-        let addr = addr.parse()
-            .map_err(|e| crate::error::SyncEngineError::Transport(format!("Invalid address: {}", e)))?;
+        let addr = addr.parse().map_err(|e| {
+            crate::error::SyncEngineError::Transport(format!("Invalid address: {}", e))
+        })?;
 
         let sync_service = SyncServiceImpl::new(
             self.config.clone(),
@@ -119,13 +118,15 @@ impl SyncService for SyncServiceImpl {
         let _req = request.into_inner();
         let (tx, rx) = mpsc::channel(4);
         tokio::spawn(async move {
-            let _ = tx.send(Ok(DeltaResponse {
-                partition_key: String::new(),
-                records: vec![],
-                total_available: 0,
-                has_more: false,
-                next_offset: 0,
-            })).await;
+            let _ = tx
+                .send(Ok(DeltaResponse {
+                    partition_key: String::new(),
+                    records: vec![],
+                    total_available: 0,
+                    has_more: false,
+                    next_offset: 0,
+                }))
+                .await;
         });
         Ok(Response::new(ReceiverStream::new(rx)))
     }

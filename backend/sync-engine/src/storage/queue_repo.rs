@@ -38,11 +38,7 @@ impl QueueRepo {
         Ok(())
     }
 
-    pub async fn dequeue(
-        &self,
-        node_id: uuid::Uuid,
-        limit: i64,
-    ) -> SyncResult<Vec<QueueItem>> {
+    pub async fn dequeue(&self, node_id: uuid::Uuid, limit: i64) -> SyncResult<Vec<QueueItem>> {
         let rows = sqlx::query_as::<_, QueueRow>(
             r#"
             UPDATE sync.sync_queue
@@ -81,12 +77,10 @@ impl QueueRepo {
     }
 
     pub async fn mark_completed(&self, queue_id: uuid::Uuid) -> SyncResult<()> {
-        sqlx::query(
-            "UPDATE sync.sync_queue SET status = 'completed' WHERE queue_id = $1",
-        )
-        .bind(queue_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE sync.sync_queue SET status = 'completed' WHERE queue_id = $1")
+            .bind(queue_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 

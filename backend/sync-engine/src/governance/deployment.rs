@@ -209,9 +209,15 @@ impl DeploymentGovernance {
                     check_name: "Environment allowed components".into(),
                     passed: allowed,
                     message: if allowed {
-                        format!("Component '{}' allowed in environment '{}'", comp.name, env.name)
+                        format!(
+                            "Component '{}' allowed in environment '{}'",
+                            comp.name, env.name
+                        )
                     } else {
-                        format!("Component '{}' not allowed in environment '{}'", comp.name, env.name)
+                        format!(
+                            "Component '{}' not allowed in environment '{}'",
+                            comp.name, env.name
+                        )
                     },
                 });
                 if !allowed {
@@ -229,7 +235,11 @@ impl DeploymentGovernance {
                 policy_checks.push(PolicyCheckResult {
                     check_name: "SBOM requirement".into(),
                     passed: has_sbom,
-                    message: if has_sbom { "SBOM present".into() } else { "SBOM missing".into() },
+                    message: if has_sbom {
+                        "SBOM present".into()
+                    } else {
+                        "SBOM missing".into()
+                    },
                 });
                 if !has_sbom {
                     violations.push("SBOM is required but not present".into());
@@ -241,7 +251,11 @@ impl DeploymentGovernance {
                 policy_checks.push(PolicyCheckResult {
                     check_name: "Security scan".into(),
                     passed: scanned,
-                    message: if scanned { "Security scan passed".into() } else { "Security scan required".into() },
+                    message: if scanned {
+                        "Security scan passed".into()
+                    } else {
+                        "Security scan required".into()
+                    },
                 });
                 if !scanned {
                     violations.push("Security scan is required but was not performed".into());
@@ -253,7 +267,11 @@ impl DeploymentGovernance {
                 policy_checks.push(PolicyCheckResult {
                     check_name: "Signature verification".into(),
                     passed: signed,
-                    message: if signed { "Artifact signed".into() } else { "Artifact not signed".into() },
+                    message: if signed {
+                        "Artifact signed".into()
+                    } else {
+                        "Artifact not signed".into()
+                    },
                 });
                 if !signed {
                     violations.push("Artifact signing is required".into());

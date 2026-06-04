@@ -1,13 +1,13 @@
-pub mod scheduler;
-pub mod replay_runtime;
 pub mod benchmark;
+pub mod certification;
+pub mod complexity;
+pub mod constitution;
+pub mod operations;
+pub mod replay_runtime;
+pub mod scheduler;
 pub mod storage;
 pub mod survivability;
-pub mod operations;
-pub mod complexity;
 pub mod verification;
-pub mod certification;
-pub mod constitution;
 
 /// Sovereign runtime governor — hardens execution, enforces resource bounds,
 /// governs determinism, and prevents unbounded growth across all platform execution paths.
@@ -25,7 +25,10 @@ impl RuntimeGovernor {
     }
 
     /// Verify all runtime subsystems are within constitutional bounds
-    pub fn verify_runtime_readiness(&self, constitution: &constitution::RuntimeConstitution) -> constitution::ConstitutionCompliance {
+    pub fn verify_runtime_readiness(
+        &self,
+        constitution: &constitution::RuntimeConstitution,
+    ) -> constitution::ConstitutionCompliance {
         constitution.verify_compliance()
     }
 }

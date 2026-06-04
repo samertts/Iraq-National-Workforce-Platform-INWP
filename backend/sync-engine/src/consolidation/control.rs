@@ -109,11 +109,15 @@ impl DeterministicControlPlane {
             execution_order: targets.clone(),
         };
 
-        let batches = targets.chunks(2).enumerate().map(|(i, chunk)| BatchSpec {
-            batch_number: (i + 1) as u32,
-            targets: chunk.to_vec(),
-            verification: format!("Batch {} health check passed", i + 1),
-        }).collect();
+        let batches = targets
+            .chunks(2)
+            .enumerate()
+            .map(|(i, chunk)| BatchSpec {
+                batch_number: (i + 1) as u32,
+                targets: chunk.to_vec(),
+                verification: format!("Batch {} health check passed", i + 1),
+            })
+            .collect();
 
         let plan = DeterministicDeploymentPlan {
             plan_id: uuid::Uuid::now_v7(),
@@ -124,11 +128,18 @@ impl DeterministicControlPlane {
                 strategy: RolloutStrategy::RollingBatch(2),
                 batches,
                 cooldown_secs: 300,
-                verification_steps: vec!["Health check".into(), "Governance validation".into(), "Replay verification".into()],
+                verification_steps: vec![
+                    "Health check".into(),
+                    "Governance validation".into(),
+                    "Replay verification".into(),
+                ],
             },
             rollback_plan: RollbackPlan {
                 rollback_version: semver::Version::new(0, 0, 0),
-                rollback_steps: vec!["Revert to previous version".into(), "Verify state consistency".into()],
+                rollback_steps: vec![
+                    "Revert to previous version".into(),
+                    "Verify state consistency".into(),
+                ],
                 data_preservation: true,
             },
             governance_hash: vec![],

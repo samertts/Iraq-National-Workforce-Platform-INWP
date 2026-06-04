@@ -36,7 +36,8 @@ pub async fn perform_handshake(
         });
     }
 
-    let negotiated_version = local_versions.iter()
+    let negotiated_version = local_versions
+        .iter()
         .find(|v| remote_versions.contains(v))
         .cloned()
         .unwrap_or_default();

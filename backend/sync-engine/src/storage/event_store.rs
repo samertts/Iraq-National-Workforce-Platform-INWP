@@ -39,7 +39,10 @@ impl EventStore {
         Ok(())
     }
 
-    pub async fn append_batch(&self, events: &[crate::events::contract::SyncEvent]) -> SyncResult<()> {
+    pub async fn append_batch(
+        &self,
+        events: &[crate::events::contract::SyncEvent],
+    ) -> SyncResult<()> {
         for event in events {
             self.append(event).await?;
         }
@@ -107,16 +110,11 @@ impl EventStore {
         Ok(row.0)
     }
 
-    pub async fn purge_before(
-        &self,
-        before: chrono::DateTime<chrono::Utc>,
-    ) -> SyncResult<u64> {
-        let result = sqlx::query(
-            "DELETE FROM sync.event_store WHERE created_at < $1",
-        )
-        .bind(before)
-        .execute(&self.pool)
-        .await?;
+    pub async fn purge_before(&self, before: chrono::DateTime<chrono::Utc>) -> SyncResult<u64> {
+        let result = sqlx::query("DELETE FROM sync.event_store WHERE created_at < $1")
+            .bind(before)
+            .execute(&self.pool)
+            .await?;
         Ok(result.rows_affected())
     }
 }

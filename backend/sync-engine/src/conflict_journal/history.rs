@@ -26,23 +26,31 @@ impl ConflictHistory {
     }
 
     pub fn replay(&self, from: chrono::DateTime<chrono::Utc>) -> Vec<&ConflictJournalEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.created_at >= from)
             .collect()
     }
 
     pub fn for_human_review(&self) -> Vec<HumanReadableConflict> {
-        self.entries.iter().map(|e| HumanReadableConflict {
-            conflict_id: e.conflict_id,
-            record_type: e.record_type.clone(),
-            record_id: e.record_id.clone(),
-            local_node: e.local_node,
-            remote_node: e.remote_node,
-            strategy: e.resolution_strategy.clone(),
-            status: if e.resolution.is_some() { "resolved" } else { "open" },
-            created_at: e.created_at,
-            resolved_at: e.resolved_at,
-        }).collect()
+        self.entries
+            .iter()
+            .map(|e| HumanReadableConflict {
+                conflict_id: e.conflict_id,
+                record_type: e.record_type.clone(),
+                record_id: e.record_id.clone(),
+                local_node: e.local_node,
+                remote_node: e.remote_node,
+                strategy: e.resolution_strategy.clone(),
+                status: if e.resolution.is_some() {
+                    "resolved"
+                } else {
+                    "open"
+                },
+                created_at: e.created_at,
+                resolved_at: e.resolved_at,
+            })
+            .collect()
     }
 }
 

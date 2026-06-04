@@ -126,8 +126,16 @@ impl ByzantineTestEngine {
             }
         }
 
-        let detection_rate = if total > 0 { detections as f64 / total as f64 } else { 1.0 };
-        let isolation_rate = if total > 0 { isolations as f64 / total as f64 } else { 1.0 };
+        let detection_rate = if total > 0 {
+            detections as f64 / total as f64
+        } else {
+            1.0
+        };
+        let isolation_rate = if total > 0 {
+            isolations as f64 / total as f64
+        } else {
+            1.0
+        };
         let survived = failed == 0 || plan.expected_survivability;
 
         info!(
@@ -172,7 +180,8 @@ impl ByzantineTestEngine {
 
         if report.detection_rate < 0.8 {
             recommendations.push(
-                "Increase Byzantine fault detection coverage — current rate is below 80% threshold".into(),
+                "Increase Byzantine fault detection coverage — current rate is below 80% threshold"
+                    .into(),
             );
         }
 

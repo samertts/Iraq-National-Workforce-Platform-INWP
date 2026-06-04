@@ -262,7 +262,10 @@ impl InvariantRegistry {
                     invariant_id: invariant.invariant_id.clone(),
                     name: invariant.name.clone(),
                     severity: invariant.enforcement,
-                    message: format!("Invariant '{}' violated: {}", invariant.name, invariant.statement),
+                    message: format!(
+                        "Invariant '{}' violated: {}",
+                        invariant.name, invariant.statement
+                    ),
                     context: HashMap::new(),
                 });
             }

@@ -74,7 +74,11 @@ impl SovereigntyEngine {
                     super::sovereignty::DataClassification::Public => 365,
                 },
                 archival_after_days: 0,
-                immutable: matches!(classification, super::sovereignty::DataClassification::TopSecret | super::sovereignty::DataClassification::Secret),
+                immutable: matches!(
+                    classification,
+                    super::sovereignty::DataClassification::TopSecret
+                        | super::sovereignty::DataClassification::Secret
+                ),
                 legal_hold: false,
             },
             access_controlled: true,
@@ -98,13 +102,24 @@ impl ResidencyEngine {
         ResidencyVerification {
             zone_id: zone_id.to_string(),
             compliant,
-            local_storage_required: matches!(data, super::sovereignty::DataClassification::TopSecret | super::sovereignty::DataClassification::Secret),
-            cross_border_permitted: !matches!(data, super::sovereignty::DataClassification::TopSecret),
+            local_storage_required: matches!(
+                data,
+                super::sovereignty::DataClassification::TopSecret
+                    | super::sovereignty::DataClassification::Secret
+            ),
+            cross_border_permitted: !matches!(
+                data,
+                super::sovereignty::DataClassification::TopSecret
+            ),
             applicable_laws: vec![
                 "Iraq Personal Data Protection Law".into(),
                 "INWP Sovereign Data Governance Act".into(),
             ],
-            violations: if compliant { vec![] } else { vec!["TopSecret data must remain within Iraqi jurisdiction".into()] },
+            violations: if compliant {
+                vec![]
+            } else {
+                vec!["TopSecret data must remain within Iraqi jurisdiction".into()]
+            },
         }
     }
 }
@@ -114,12 +129,7 @@ impl PartitionPolicyEngine {
         Self
     }
 
-    pub fn compute_partition_key(
-        &self,
-        domain: &str,
-        region: &str,
-        institution: &str,
-    ) -> String {
+    pub fn compute_partition_key(&self, domain: &str, region: &str, institution: &str) -> String {
         format!("{}:{}:{}", domain, region, institution)
     }
 

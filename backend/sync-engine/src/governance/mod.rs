@@ -1,16 +1,16 @@
-pub mod registry;
 pub mod analyzer;
-pub mod validator;
-pub mod schema;
-pub mod migration;
-pub mod replay;
-pub mod federation;
+pub mod compatibility;
 pub mod deployment;
+pub mod event_registry;
+pub mod federation;
+pub mod migration;
+pub mod registry;
+pub mod replay;
+pub mod schema;
+pub mod schema_evolution;
 pub mod sovereignty;
 pub mod sovereignty_ext;
-pub mod event_registry;
-pub mod compatibility;
-pub mod schema_evolution;
+pub mod validator;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -193,14 +193,24 @@ impl GovernanceEngine {
         }
     }
 
-    async fn evaluate_policy(&self, policy: &GovernancePolicy, context: &GovernanceContext) -> PolicyEvalResult {
+    async fn evaluate_policy(
+        &self,
+        policy: &GovernancePolicy,
+        context: &GovernanceContext,
+    ) -> PolicyEvalResult {
         match &policy.rule {
             PolicyRule::NoCrossContextDependency(source, target) => {
-                self.validator.read().await.validate_dependency(source, target, context).await
+                self.validator
+                    .read()
+                    .await
+                    .validate_dependency(source, target, context)
+                    .await
             }
-            PolicyRule::RequiredInterface(context_name, interface) => {
-                self.registry.read().await.verify_interface(context_name, interface)
-            }
+            PolicyRule::RequiredInterface(context_name, interface) => self
+                .registry
+                .read()
+                .await
+                .verify_interface(context_name, interface),
             PolicyRule::ForbiddenDependency(source, target) => {
                 if self.analyzer.read().await.has_dependency(source, target) {
                     PolicyEvalResult::Violation(GovernanceViolation {
@@ -209,14 +219,21 @@ impl GovernanceEngine {
                         severity: policy.severity,
                         message: format!("Forbidden dependency from '{}' to '{}'", source, target),
                         context: HashMap::new(),
-                        remediations: vec![format!("Remove dependency from {} to {}", source, target)],
+                        remediations: vec![format!(
+                            "Remove dependency from {} to {}",
+                            source, target
+                        )],
                     })
                 } else {
                     PolicyEvalResult::Pass
                 }
             }
             PolicyRule::MaxCouplingScore(max) => {
-                let score = self.analyzer.read().await.compute_coupling_score(context.target.as_str());
+                let score = self
+                    .analyzer
+                    .read()
+                    .await
+                    .compute_coupling_score(context.target.as_str());
                 if score > *max {
                     PolicyEvalResult::Violation(GovernanceViolation {
                         policy_id: policy.policy_id,
@@ -238,30 +255,39 @@ impl GovernanceEngine {
                         severity: policy.severity,
                         message: format!("Context '{}' has no registered owner", context_name),
                         context: HashMap::new(),
-                        remediations: vec![format!("Register an owner for context '{}'", context_name)],
+                        remediations: vec![format!(
+                            "Register an owner for context '{}'",
+                            context_name
+                        )],
                     })
                 } else {
                     PolicyEvalResult::Pass
                 }
             }
-            PolicyRule::SchemaEvolutionRule(contract_id, rule) => {
-                self.schema_gov.read().await.check_evolution_rule(contract_id, rule)
-            }
-            PolicyRule::MigrationSafetyRule(_) => {
-                PolicyEvalResult::Pass
-            }
+            PolicyRule::SchemaEvolutionRule(contract_id, rule) => self
+                .schema_gov
+                .read()
+                .await
+                .check_evolution_rule(contract_id, rule),
+            PolicyRule::MigrationSafetyRule(_) => PolicyEvalResult::Pass,
             PolicyRule::ReplayDeterminism(stream) => {
                 self.replay_gov.read().await.check_determinism(stream)
             }
-            PolicyRule::FederationBoundary(domain, allowed) => {
-                self.federation_gov.read().await.check_boundary(domain, allowed)
-            }
-            PolicyRule::DeploymentTag(component, tag) => {
-                self.deployment_gov.read().await.validate_tag(component, tag)
-            }
-            PolicyRule::SovereigntyResidency(zone, allowed_regions) => {
-                self.sovereignty_reg.read().await.check_residency(zone, allowed_regions)
-            }
+            PolicyRule::FederationBoundary(domain, allowed) => self
+                .federation_gov
+                .read()
+                .await
+                .check_boundary(domain, allowed),
+            PolicyRule::DeploymentTag(component, tag) => self
+                .deployment_gov
+                .read()
+                .await
+                .validate_tag(component, tag),
+            PolicyRule::SovereigntyResidency(zone, allowed_regions) => self
+                .sovereignty_reg
+                .read()
+                .await
+                .check_residency(zone, allowed_regions),
         }
     }
 

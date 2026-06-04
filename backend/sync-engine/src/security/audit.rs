@@ -18,11 +18,7 @@ impl SecurityAudit {
         );
     }
 
-    pub fn log_sync_signature(
-        node_id: &uuid::Uuid,
-        sync_id: &uuid::Uuid,
-        signature_valid: bool,
-    ) {
+    pub fn log_sync_signature(node_id: &uuid::Uuid, sync_id: &uuid::Uuid, signature_valid: bool) {
         info!(
             node_id = %node_id,
             sync_id = %sync_id,

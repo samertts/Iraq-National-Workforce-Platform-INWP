@@ -11,7 +11,11 @@ pub struct EventProducer {
 }
 
 impl EventProducer {
-    pub fn new(node_id: uuid::Uuid, signing_key_id: impl Into<String>, signing_engine: SigningEngine) -> Self {
+    pub fn new(
+        node_id: uuid::Uuid,
+        signing_key_id: impl Into<String>,
+        signing_engine: SigningEngine,
+    ) -> Self {
         Self {
             node_id,
             signing_key_id: signing_key_id.into(),
@@ -53,7 +57,9 @@ impl EventProducer {
         payload: Vec<u8>,
         publisher: &impl EventPublisher,
     ) -> SyncResult<()> {
-        let event = self.produce_event(event_type, partition_key, payload).await?;
+        let event = self
+            .produce_event(event_type, partition_key, payload)
+            .await?;
         publisher.publish(&event).await
     }
 }
@@ -83,7 +89,10 @@ impl EventPublisher for NatsEventPublisher {
     async fn publish(&self, event: &SyncEvent) -> SyncResult<()> {
         let subject = format!("{}.{}", self.subject_prefix, event.event_type);
         let payload = serde_json::to_vec(event)?;
-        self.client.publish(subject, payload.into()).await.map_err(|e| SyncEngineError::Nats(e.into()))?;
+        self.client
+            .publish(subject, payload.into())
+            .await
+            .map_err(|e| SyncEngineError::Nats(e.into()))?;
         Ok(())
     }
 

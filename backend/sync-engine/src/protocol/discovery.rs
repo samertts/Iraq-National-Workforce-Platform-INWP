@@ -39,7 +39,9 @@ pub async fn perform_discovery(
             peer: remote_node.clone(),
             partitions: Vec::new(),
             accepted: false,
-            reject_reason: Some("Sync topology violation: node cannot initiate sync with this peer type".into()),
+            reject_reason: Some(
+                "Sync topology violation: node cannot initiate sync with this peer type".into(),
+            ),
             suggested_batch_size: 0,
         });
     }
@@ -88,7 +90,10 @@ fn compute_common_partitions(local: &NodeIdentity, remote: &NodeIdentity) -> Vec
                 }
             }
             (NodeType::Edge, NodeType::RegionalRelay) => {
-                partitions.push(PartitionKey::entity_prefix(local.ministry_id, "clock_events"));
+                partitions.push(PartitionKey::entity_prefix(
+                    local.ministry_id,
+                    "clock_events",
+                ));
                 partitions.push(PartitionKey::entity_prefix(local.ministry_id, "attendance"));
             }
             (NodeType::RegionalRelay, NodeType::NationalHub) => {

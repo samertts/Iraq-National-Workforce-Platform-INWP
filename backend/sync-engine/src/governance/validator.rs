@@ -92,8 +92,14 @@ impl BoundedContextValidator {
                         m
                     },
                     remediations: vec![
-                        format!("Introduce anti-corruption layer between '{}' and '{}'", source, target),
-                        format!("Refactor '{}' to depend on interface instead of '{}' directly", source, target),
+                        format!(
+                            "Introduce anti-corruption layer between '{}' and '{}'",
+                            source, target
+                        ),
+                        format!(
+                            "Refactor '{}' to depend on interface instead of '{}' directly",
+                            source, target
+                        ),
                     ],
                 });
             }
