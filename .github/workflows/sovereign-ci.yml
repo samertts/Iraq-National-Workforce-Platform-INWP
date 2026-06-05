@@ -63,7 +63,7 @@ jobs:
         with:
           path: ./backend/sync-engine
       - name: Vulnerability Scan (Grype)
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           path: ./backend/sync-engine
       - name: Container Scan (Trivy)
