@@ -3361,7 +3361,7 @@ dependencies = [
  "opentelemetry_sdk",
  "prost",
  "prost-types",
- "rand 0.8.6",
+ "rand 0.10.1",
  "reqwest",
  "rstest",
  "rustls",
