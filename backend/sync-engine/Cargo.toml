@@ -93,7 +93,7 @@ semver = "1"
 
 [dev-dependencies]
 tempfile = "3"
-rstest = "0.23"
+rstest = "0.26"
 mockall = "0.13"
 testcontainers = "0.23"
 
