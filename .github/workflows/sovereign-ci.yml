@@ -17,7 +17,7 @@ jobs:
     name: Governance Compliance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Architecture Dependency Analysis
         run: cargo run --bin sync-engine -- governance analyze-deps
@@ -39,7 +39,7 @@ jobs:
     needs: governance-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo Deny — Dependency Audit
         run: cargo install cargo-deny && cargo deny check
@@ -57,7 +57,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate SBOM (Syft)
         uses: anchore/sbom-action@v0
         with:
@@ -77,7 +77,7 @@ jobs:
     needs: supply-chain
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Terraform Validation
         run: |
           terraform init -backend=false
@@ -95,7 +95,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Invariant Verification
         run: cargo run --bin sync-engine -- verify invariants
@@ -113,7 +113,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build Once
         run: cargo build --release
@@ -132,7 +132,7 @@ jobs:
     name: Secret Scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: GitLeaks Scan
         uses: gitleaks/gitleaks-action@v2
         with:
@@ -143,7 +143,7 @@ jobs:
     needs: [build-and-test, runtime-certification, reproducible-build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Partition Simulation
         run: cargo run --bin sync-engine -- chaos simulate-partition
       - name: Byzantine Behavior Simulation
