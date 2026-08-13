@@ -17,27 +17,27 @@ var (
 )
 
 type ClockInCommand struct {
-	EmployeeID     domain.EmployeeID
-	MinistryID     uuid.UUID
-	SiteID         uuid.UUID
-	DeviceID       domain.DeviceID
-	EventTime      time.Time
-	Timezone       string
-	BiometricData  []byte
-	Latitude       *float64
-	Longitude      *float64
-	IPAddress      *string
-	NodeID         uuid.UUID
+	EmployeeID    domain.EmployeeID
+	MinistryID    uuid.UUID
+	SiteID        uuid.UUID
+	DeviceID      domain.DeviceID
+	EventTime     time.Time
+	Timezone      string
+	BiometricData []byte
+	Latitude      *float64
+	Longitude     *float64
+	IPAddress     *string
+	NodeID        uuid.UUID
 }
 
 type ClockInHandler struct {
-	eventRepo     domain.ClockEventRepository
-	shiftRepo     domain.ShiftRepository
-	policyRepo    domain.AttendancePolicyRepository
-	dupDetect     domain.DuplicateDetectionService
-	biometricSvc  domain.BiometricVerificationService
-	eventPub      EventPublisher
-	syncQueue     SyncQueue
+	eventRepo    domain.ClockEventRepository
+	shiftRepo    domain.ShiftRepository
+	policyRepo   domain.AttendancePolicyRepository
+	dupDetect    domain.DuplicateDetectionService
+	biometricSvc domain.BiometricVerificationService
+	eventPub     EventPublisher
+	syncQueue    SyncQueue
 }
 
 func NewClockInHandler(
@@ -145,25 +145,25 @@ func (h *ClockInHandler) Handle(cmd ClockInCommand) (*domain.ClockEvent, error) 
 }
 
 type ClockOutCommand struct {
-	EmployeeID     domain.EmployeeID
-	MinistryID     uuid.UUID
-	SiteID         uuid.UUID
-	DeviceID       domain.DeviceID
-	EventTime      time.Time
-	Timezone       string
-	BiometricData  []byte
-	Latitude       *float64
-	Longitude      *float64
-	IPAddress      *string
-	NodeID         uuid.UUID
+	EmployeeID    domain.EmployeeID
+	MinistryID    uuid.UUID
+	SiteID        uuid.UUID
+	DeviceID      domain.DeviceID
+	EventTime     time.Time
+	Timezone      string
+	BiometricData []byte
+	Latitude      *float64
+	Longitude     *float64
+	IPAddress     *string
+	NodeID        uuid.UUID
 }
 
 type ClockOutHandler struct {
-	eventRepo     domain.ClockEventRepository
-	dupDetect     domain.DuplicateDetectionService
-	biometricSvc  domain.BiometricVerificationService
-	eventPub      EventPublisher
-	syncQueue     SyncQueue
+	eventRepo    domain.ClockEventRepository
+	dupDetect    domain.DuplicateDetectionService
+	biometricSvc domain.BiometricVerificationService
+	eventPub     EventPublisher
+	syncQueue    SyncQueue
 }
 
 func NewClockOutHandler(
@@ -239,7 +239,7 @@ func (h *ClockOutHandler) Handle(cmd ClockOutCommand) (*domain.ClockEvent, error
 			Src:     "/ministries/" + cmd.MinistryID.String() + "/sites/" + cmd.SiteID.String() + "/services/attendance-service",
 			Mtd:     cmd.MinistryID,
 			StID:    &cmd.SiteID,
-			DevID:   uuidPtr(cmd.DevID),
+			DevID:   uuidPtr(cmd.DeviceID),
 			EmpID:   uuidPtr(cmd.EmployeeID),
 		},
 		EmployeeID: uuid.UUID(cmd.EmployeeID),

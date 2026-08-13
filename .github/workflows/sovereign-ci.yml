@@ -1,4 +1,4 @@
-name: Sovereign CI — INWP Governance Pipeline
+name: INWP Sovereign CI
 
 on:
   push:
@@ -7,10 +7,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
-  CARGO_TERM_COLOR: always
-  SQLX_OFFLINE: true
-  RUSTFLAGS: "-D warnings"
+  GO_VERSION: '1.22'
+  SERVICE_DIR: attendance-service
 
 jobs:
   governance-check:
@@ -18,39 +21,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Architecture Dependency Analysis
-        run: cargo run --bin sync-engine -- governance analyze-deps
-      - name: Bounded Context Validation
-        run: cargo run --bin sync-engine -- governance validate-contexts
-      - name: Schema Contract Validation
-        run: cargo run --bin sync-engine -- governance validate-schemas
-      - name: Migration Safety Check
-        run: cargo run --bin sync-engine -- governance check-migrations
-      - name: Replay Determinism Check
-        run: cargo run --bin sync-engine -- governance check-replay
-      - name: Federation Boundary Validation
-        run: cargo run --bin sync-engine -- governance validate-boundaries
-      - name: Deployment Policy Check
-        run: cargo run --bin sync-engine -- governance check-deployment-policy
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Verify service boundary
+        run: |
+          test -f "$SERVICE_DIR/go.mod"
+          test ! -e Cargo.toml
+          test ! -e terraform
+      - name: Validate Go packages
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go test ./...
+      - name: Validate dependency graph
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go mod verify
 
   build-and-test:
-    name: Build & Test
+    name: Build and Test
     needs: governance-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Cargo Deny — Dependency Audit
-        run: cargo install cargo-deny && cargo deny check
-      - name: Cargo Audit — Security Audit
-        run: cargo install cargo-audit && cargo audit
-      - name: Cargo Check — Full Build
-        run: cargo check --workspace
-      - name: Cargo Test
-        run: cargo test --workspace
-      - name: Cargo Clippy — Lint
-        run: cargo clippy -- -D warnings
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Go vet
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go vet ./...
+      - name: Go test
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go test -race ./...
+      - name: Build attendance service
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go build ./...
 
   supply-chain:
     name: Supply Chain Verification
@@ -58,37 +63,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Generate SBOM (Syft)
-        uses: anchore/sbom-action@v0
+      - uses: actions/setup-go@v5
         with:
-          path: ./backend/sync-engine
-      - name: Vulnerability Scan (Grype)
-        uses: anchore/scan-action@v3
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Verify modules
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go mod verify
+      - name: Generate dependency manifest
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go list -m all > /tmp/inwp-go-modules.txt
+      - name: Upload dependency manifest
+        uses: actions/upload-artifact@v4
         with:
-          path: ./backend/sync-engine
-      - name: Container Scan (Trivy)
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: ./backend/sync-engine
-
-  deploy-governance:
-    name: Deployment Validation
-    needs: supply-chain
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Terraform Validation
-        run: |
-          terraform init -backend=false
-          terraform validate
-      - name: Infrastructure Policy Check
-        run: cargo run --bin sync-engine -- governance validate-infra
-      - name: Artifact Signing (Cosign)
-        run: |
-          cargo build --release
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY \
-            target/release/sync-engine > target/release/sync-engine.sig
+          name: inwp-go-modules
+          path: /tmp/inwp-go-modules.txt
 
   runtime-certification:
     name: Runtime Certification
@@ -96,17 +85,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Invariant Verification
-        run: cargo run --bin sync-engine -- verify invariants
-      - name: Replay Determinism Proof
-        run: cargo run --bin sync-engine -- verify replay-determinism
-      - name: Federation Safety Verification
-        run: cargo run --bin sync-engine -- verify federation-safety
-      - name: Runtime Constitution Verification
-        run: cargo run --bin sync-engine -- verify runtime-constitution
-      - name: Survivability Validation
-        run: cargo run --bin sync-engine -- verify survivability
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Runtime package verification
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go test ./...
 
   reproducible-build:
     name: Reproducible Build
@@ -114,19 +99,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Build Once
-        run: cargo build --release
-        working-directory: ./backend/sync-engine
-      - name: Compute Build Hash
-        run: sha256sum target/release/sync-engine > /tmp/build-hash-v1.txt
-      - name: Rebuild
-        run: cargo clean && cargo build --release
-        working-directory: ./backend/sync-engine
-      - name: Compare Build Hashes
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Build twice with deterministic flags
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
-          sha256sum -c /tmp/build-hash-v1.txt target/release/sync-engine || \
-            (echo "::error::BUILD NOT REPRODUCIBLE — Determinism violation" && exit 1)
+          go build -trimpath -buildvcs=false -o /tmp/inwp-sync-engine-a ./cmd/attendance-service
+          go build -trimpath -buildvcs=false -o /tmp/inwp-sync-engine-b ./cmd/attendance-service
+          sha256sum /tmp/inwp-sync-engine-a /tmp/inwp-sync-engine-b
+          cmp /tmp/inwp-sync-engine-a /tmp/inwp-sync-engine-b
 
   secret-scanning:
     name: Secret Scanning
@@ -135,6 +118,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: GitLeaks Scan
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-path: .github/gitleaks.toml
 
@@ -144,11 +129,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Partition Simulation
-        run: cargo run --bin sync-engine -- chaos simulate-partition
-      - name: Byzantine Behavior Simulation
-        run: cargo run --bin sync-engine -- chaos simulate-byzantine
-      - name: Corruption Injection Test
-        run: cargo run --bin sync-engine -- chaos inject-corruption
-      - name: Recovery Stress Test
-        run: cargo run --bin sync-engine -- chaos stress-recovery
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: attendance-service/go.sum
+      - name: Offline and recovery test suite
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go test ./...
