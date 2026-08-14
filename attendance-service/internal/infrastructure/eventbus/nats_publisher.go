@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/domain"
 )
@@ -18,20 +17,20 @@ func NewNATSPublisher(conn *nats.Conn) *NATSPublisher {
 }
 
 type CloudEvent struct {
-	SpecVersion     string          `json:"specversion"`
-	ID              string          `json:"id"`
-	Source          string          `json:"source"`
-	Type            string          `json:"type"`
-	DataContentType string          `json:"datacontenttype"`
-	Subject         string          `json:"subject"`
-	Time            string          `json:"time"`
-	DataSchema      string          `json:"dataschema"`
-	MinistryID      string          `json:"ministry_id"`
-	SiteID          *string         `json:"site_id,omitempty"`
-	DeviceID        *string         `json:"device_id,omitempty"`
-	UserID          *string         `json:"user_id,omitempty"`
-	OfflineGenerated bool           `json:"offline_generated"`
-	Data            json.RawMessage `json:"data"`
+	SpecVersion      string          `json:"specversion"`
+	ID               string          `json:"id"`
+	Source           string          `json:"source"`
+	Type             string          `json:"type"`
+	DataContentType  string          `json:"datacontenttype"`
+	Subject          string          `json:"subject"`
+	Time             string          `json:"time"`
+	DataSchema       string          `json:"dataschema"`
+	MinistryID       string          `json:"ministry_id"`
+	SiteID           *string         `json:"site_id,omitempty"`
+	DeviceID         *string         `json:"device_id,omitempty"`
+	UserID           *string         `json:"user_id,omitempty"`
+	OfflineGenerated bool            `json:"offline_generated"`
+	Data             json.RawMessage `json:"data"`
 }
 
 func (p *NATSPublisher) Publish(event domain.DomainEvent) error {

@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/application"
+	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/domain"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/eventbus"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/postgres"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/sync"
