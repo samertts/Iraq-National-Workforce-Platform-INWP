@@ -1,0 +1,113 @@
+name: inwp
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: inwp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-inwp}
+      POSTGRES_USER: ${POSTGRES_USER:-inwp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inwp-dev-only}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../attendance-service/migrations/001_create_attendance_schema.up.sql:/docker-entrypoint-initdb.d/001_attendance.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [inwp]
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: inwp-nats
+    restart: unless-stopped
+    command: ["--jetstream", "--store_dir=/data/nats", "--http_port=8222"]
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITOR_PORT:-8222}:8222"
+    volumes:
+      - nats-data:/data/nats
+    networks: [inwp]
+
+  attendance-service:
+    build:
+      context: ../attendance-service
+      dockerfile: Dockerfile
+    container_name: inwp-attendance
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-inwp}:${POSTGRES_PASSWORD:-inwp-dev-only}@postgres:5432/${POSTGRES_DB:-inwp}?sslmode=disable
+      NATS_URL: nats://nats:4222
+      HTTP_PORT: 8080
+      GRPC_PORT: 9090
+      NODE_ID: ${ATTENDANCE_NODE_ID:-00000000-0000-0000-0000-000000000002}
+      GULA_BASE_URL: ${GULA_BASE_URL:-}
+      GULA_ACCESS_TOKEN: ${GULA_ACCESS_TOKEN:-}
+    ports:
+      - "${ATTENDANCE_HTTP_PORT:-8080}:8080"
+      - "${ATTENDANCE_GRPC_PORT:-9090}:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "/attendance-service", "--healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [inwp]
+
+  sync-engine:
+    build:
+      context: ../backend/sync-engine
+      dockerfile: deploy/Dockerfile
+    container_name: inwp-sync-engine
+    restart: unless-stopped
+    environment:
+      SYNC_NODE_ID: ${SYNC_NODE_ID:-00000000-0000-0000-0000-000000000001}
+      SYNC_NODE_NAME: ${SYNC_NODE_NAME:-edge-node-001}
+      SYNC_NODE_TYPE: ${SYNC_NODE_TYPE:-edge}
+      SYNC_MINISTRY_ID: ${SYNC_MINISTRY_ID:-00000000-0000-0000-0000-000000000010}
+      SYNC_SITE_ID: ${SYNC_SITE_ID:-00000000-0000-0000-0000-000000000020}
+      SYNC_REGION: ${SYNC_REGION:-baghdad}
+      DATABASE_URL: postgres://${POSTGRES_USER:-inwp}:${POSTGRES_PASSWORD:-inwp-dev-only}@postgres:5432/${POSTGRES_DB:-inwp}
+      NATS_URL: nats://nats:4222
+      SYNC_TLS_CERT: /tmp/dev-server.crt
+      SYNC_TLS_KEY: /tmp/dev-server.key
+      SYNC_TLS_CA: /tmp/dev-ca.crt
+      SYNC_SIGNING_KEY: /tmp/dev-signing.key
+      SYNC_SIGNING_KEY_ID: ${SYNC_SIGNING_KEY_ID:-edge-node-001-key}
+      SYNC_MTLS_REQUIRED: "false"
+      SYNC_CERT_VERIFY_CRL: "false"
+      SYNC_MDNS_ENABLED: "true"
+      SYNC_GRPC_LISTEN: 0.0.0.0
+      SYNC_GRPC_PORT: 50052
+      SYNC_HEALTH_PORT: 8082
+      SYNC_LOG_LEVEL: ${SYNC_LOG_LEVEL:-info}
+    ports:
+      - "${SYNC_GRPC_PORT:-50052}:50052"
+      - "${SYNC_HEALTH_PORT:-8082}:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 50052"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [inwp]
+
+volumes:
+  postgres-data:
+  nats-data:
+
+networks:
+  inwp:
+    driver: bridge

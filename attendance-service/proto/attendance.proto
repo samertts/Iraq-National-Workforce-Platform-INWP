@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package inwp.attendance.v1;
+
+option go_package = "github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/proto;attendancepb";
+
+import "google/protobuf/timestamp.proto";
+
+service AttendanceService {
+  rpc ClockIn(ClockRequest) returns (ClockResponse);
+  rpc ClockOut(ClockRequest) returns (ClockResponse);
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);
+}
+
+message ClockRequest {
+  string employee_id = 1;
+  string device_id = 2;
+  string site_id = 3;
+  string ministry_id = 4;
+  google.protobuf.Timestamp event_time = 5;
+  string timezone = 6;
+  bytes biometric_data = 7;
+  optional double latitude = 8;
+  optional double longitude = 9;
+  string ip_address = 10;
+  string node_id = 11;
+}
+
+message ClockResponse {
+  string event_id = 1;
+  string event_type = 2;
+  google.protobuf.Timestamp event_time = 3;
+  google.protobuf.Timestamp recorded_at = 4;
+  string sync_status = 5;
+}
+
+message GetEventsRequest {
+  string employee_id = 1;
+  string site_id = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+}
+
+message Event {
+  string id = 1;
+  string employee_id = 2;
+  string ministry_id = 3;
+  string site_id = 4;
+  string device_id = 5;
+  string event_type = 6;
+  google.protobuf.Timestamp event_time = 7;
+  google.protobuf.Timestamp recorded_at = 8;
+  string sync_status = 9;
+}
+
+message GetEventsResponse {
+  repeated Event events = 1;
+}

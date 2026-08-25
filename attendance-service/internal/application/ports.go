@@ -10,5 +10,5 @@ type EventPublisher interface {
 }
 
 type SyncQueue interface {
-	Enqueue(entityID uuid.UUID, metadata domain.SyncMetadata) error
+	Enqueue(entityID uuid.UUID, metadata domain.SyncMetadata, payload []byte) error
 }

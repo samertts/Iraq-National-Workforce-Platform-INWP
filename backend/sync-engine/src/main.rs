@@ -5,6 +5,9 @@ use sync_engine::observability::init_observability;
 use sync_engine::storage::PgStore;
 use sync_engine::transport::grpc::GrpcServer;
 use sync_engine::transport::mesh::MeshDiscovery;
+use sync_engine::transport::nats_bridge;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 use tokio::signal;
 use tracing::{error, info};
 
@@ -21,8 +24,18 @@ async fn main() -> anyhow::Result<()> {
         "Starting sync engine"
     );
 
-    let store = PgStore::new(&config.storage).await?;
+    let store = Arc::new(PgStore::new(&config.storage).await?);
     let pool = store.pool.clone();
+
+    if config.transport.nats_url.is_some() {
+        let bridge_store = store.clone();
+        let bridge_config = config.clone();
+        tokio::spawn(async move {
+            if let Err(error) = nats_bridge::run(bridge_config, bridge_store).await {
+                error!(error = %error, "NATS sync bridge stopped");
+            }
+        });
+    }
 
     let node_id = uuid::Uuid::parse_str(&config.node.node_id)
         .map_err(|e| anyhow::anyhow!("Invalid node_id: {}", e))?;
@@ -59,6 +72,13 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
+    let health_addr = format!("0.0.0.0:{}", config.observability.health_check_port);
+    tokio::spawn(async move {
+        if let Err(error) = run_health_server(&health_addr).await {
+            error!(error = %error, "health server stopped");
+        }
+    });
+
     info!("Sync engine started successfully");
 
     signal::ctrl_c().await?;
@@ -68,4 +88,28 @@ async fn main() -> anyhow::Result<()> {
     info!("Shutdown complete");
 
     Ok(())
+}
+
+async fn run_health_server(addr: &str) -> anyhow::Result<()> {
+    let listener = TcpListener::bind(addr).await?;
+    info!(address = %addr, "Health server listening");
+    loop {
+        let (mut socket, _) = listener.accept().await?;
+        tokio::spawn(async move {
+            let mut buffer = [0u8; 1024];
+            let size = match socket.read(&mut buffer).await {
+                Ok(size) => size,
+                Err(_) => return,
+            };
+            let request = String::from_utf8_lossy(&buffer[..size]);
+            let (status, body) =
+                if request.starts_with("GET /readyz") || request.starts_with("GET /healthz") {
+                    ("200 OK", r#"{"status":"ok","service":"sync-engine"}"#)
+                } else {
+                    ("404 Not Found", r#"{"status":"not_found"}"#)
+                };
+            let response = format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+            let _ = socket.write_all(response.as_bytes()).await;
+        });
+    }
 }

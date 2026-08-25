@@ -95,6 +95,52 @@ impl EventStore {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
+    pub async fn fetch_records(
+        &self,
+        partition_key: &str,
+        record_ids: &[String],
+        offset: i64,
+        limit: i64,
+        include_payload: bool,
+    ) -> SyncResult<Vec<crate::core::types::SyncRecord>> {
+        let rows = sqlx::query_as::<_, EventRow>(
+            r#"
+            SELECT * FROM sync.event_store
+            WHERE partition_key = $1
+              AND (cardinality($2::text[]) = 0 OR event_id::text = ANY($2))
+            ORDER BY event_seq ASC
+            OFFSET $3 LIMIT $4
+            "#,
+        )
+        .bind(partition_key)
+        .bind(record_ids)
+        .bind(offset)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter()
+            .map(|row| row.try_into_record(include_payload))
+            .collect()
+    }
+
+    pub async fn count_records(
+        &self,
+        partition_key: &str,
+        record_ids: &[String],
+    ) -> SyncResult<i64> {
+        let row: (i64,) = sqlx::query_as(
+            r#"SELECT COUNT(*) FROM sync.event_store
+               WHERE partition_key = $1
+                 AND (cardinality($2::text[]) = 0 OR event_id::text = ANY($2))"#,
+        )
+        .bind(partition_key)
+        .bind(record_ids)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(row.0)
+    }
+
     pub async fn count_since(
         &self,
         partition_key: &str,
@@ -134,6 +180,26 @@ struct EventRow {
     schema_version: String,
     metadata: serde_json::Value,
     created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl EventRow {
+    fn try_into_record(self, include_payload: bool) -> SyncResult<crate::core::types::SyncRecord> {
+        Ok(crate::core::types::SyncRecord {
+            record_id: self.event_id.to_string(),
+            record_type: self.event_type,
+            payload: if include_payload {
+                self.payload
+            } else {
+                Vec::new()
+            },
+            version_vector: serde_json::from_value(self.version_vector)?,
+            local_timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_nanos(
+                self.local_timestamp,
+            ),
+            signature: self.signature,
+            operation: crate::core::types::RecordOperation::Create,
+        })
+    }
 }
 
 impl TryFrom<EventRow> for crate::events::contract::SyncEvent {

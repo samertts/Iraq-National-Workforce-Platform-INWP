@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -20,6 +21,10 @@ func NewPolicyRepository(pool *pgxpool.Pool) *PolicyRepository {
 }
 
 func (r *PolicyRepository) Save(policy *domain.AttendancePolicy) error {
+	rules, err := json.Marshal(policy.Rules())
+	if err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO attendance.attendance_policies (
 			id, ministry_id, site_id, name, rules,
@@ -32,152 +37,109 @@ func (r *PolicyRepository) Save(policy *domain.AttendancePolicy) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	_, err := r.pool.Exec(ctx, query,
-		policy.Identity(),
-		policy.MinistryID(),
-		policy.SiteID(),
-		policy.Name(),
-		policy.Rules(),
-		policy.EffectiveFrom(),
-		policy.EffectiveTo(),
-		policy.Version(),
-		policy.Supersedes(),
-		nil,
-		time.Now().UTC(),
+	_, err = r.pool.Exec(ctx, query,
+		policy.Identity(), policy.MinistryID(), policy.SiteID(), policy.Name(), rules,
+		policy.EffectiveFrom(), policy.EffectiveTo(), policy.Version(), policy.Supersedes(),
+		policy.ApprovedBy(), policy.CreatedAt(),
 	)
 	return err
 }
 
 func (r *PolicyRepository) FindByID(id uuid.UUID) (*domain.AttendancePolicy, error) {
-	query := `
-		SELECT id, ministry_id, site_id, name, rules,
-		       effective_from, effective_to, version, supersedes
+	query := `SELECT id, ministry_id, site_id, name, rules, effective_from,
+		effective_to, version, supersedes, approved_by, created_at
 		FROM attendance.attendance_policies WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	row := r.pool.QueryRow(ctx, query, id)
-	return r.scanRow(row)
+	return r.scanRow(r.pool.QueryRow(ctx, query, id))
 }
 
 func (r *PolicyRepository) FindActiveBySite(siteID uuid.UUID) (*domain.AttendancePolicy, error) {
-	query := `
-		SELECT id, ministry_id, site_id, name, rules,
-		       effective_from, effective_to, version, supersedes
+	query := `SELECT id, ministry_id, site_id, name, rules, effective_from,
+		effective_to, version, supersedes, approved_by, created_at
 		FROM attendance.attendance_policies
 		WHERE site_id = $1 AND effective_to IS NULL
 		ORDER BY effective_from DESC LIMIT 1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	row := r.pool.QueryRow(ctx, query, siteID)
-	return r.scanRow(row)
+	return r.scanRow(r.pool.QueryRow(ctx, query, siteID))
 }
 
 func (r *PolicyRepository) FindActiveByMinistry(ministryID uuid.UUID) (*domain.AttendancePolicy, error) {
-	query := `
-		SELECT id, ministry_id, site_id, name, rules,
-		       effective_from, effective_to, version, supersedes
+	query := `SELECT id, ministry_id, site_id, name, rules, effective_from,
+		effective_to, version, supersedes, approved_by, created_at
 		FROM attendance.attendance_policies
 		WHERE ministry_id = $1 AND site_id IS NULL AND effective_to IS NULL
 		ORDER BY effective_from DESC LIMIT 1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	row := r.pool.QueryRow(ctx, query, ministryID)
-	return r.scanRow(row)
+	return r.scanRow(r.pool.QueryRow(ctx, query, ministryID))
 }
 
 func (r *PolicyRepository) FindHistoryBySite(siteID uuid.UUID) ([]*domain.AttendancePolicy, error) {
-	query := `
-		SELECT id, ministry_id, site_id, name, rules,
-		       effective_from, effective_to, version, supersedes
-		FROM attendance.attendance_policies
-		WHERE site_id = $1
+	query := `SELECT id, ministry_id, site_id, name, rules, effective_from,
+		effective_to, version, supersedes, approved_by, created_at
+		FROM attendance.attendance_policies WHERE site_id = $1
 		ORDER BY effective_from DESC`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
 	rows, err := r.pool.Query(ctx, query, siteID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	return r.scanRows(rows)
 }
 
-func (r *PolicyRepository) scanRow(row pgx.Row) (*domain.AttendancePolicy, error) {
-	var (
-		id, ministryID             uuid.UUID
-		siteID                     *uuid.UUID
-		name                       string
-		rules                      domain.AttendanceRuleSet
-		effectiveFrom              time.Time
-		effectiveTo                *time.Time
-		version                    int
-		supersedes                 *uuid.UUID
-	)
+type policyScanner interface{ Scan(dest ...any) error }
 
-	err := row.Scan(
-		&id, &ministryID, &siteID, &name, &rules,
-		&effectiveFrom, &effectiveTo, &version, &supersedes,
+func scanPolicy(scanner policyScanner) (*domain.AttendancePolicy, error) {
+	var (
+		id, ministryID uuid.UUID
+		siteID         *uuid.UUID
+		name           string
+		rulesJSON      []byte
+		effectiveFrom  time.Time
+		effectiveTo    *time.Time
+		version        int
+		supersedes     *uuid.UUID
+		approvedBy     uuid.UUID
+		createdAt      time.Time
 	)
-	if err != nil {
+	if err := scanner.Scan(&id, &ministryID, &siteID, &name, &rulesJSON, &effectiveFrom,
+		&effectiveTo, &version, &supersedes, &approvedBy, &createdAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
+	var rules domain.AttendanceRuleSet
+	if len(rulesJSON) > 0 {
+		if err := json.Unmarshal(rulesJSON, &rules); err != nil {
+			return nil, err
+		}
+	}
+	return domain.RehydrateAttendancePolicy(id, ministryID, siteID, name, rules,
+		effectiveFrom, effectiveTo, version, supersedes, approvedBy, createdAt), nil
+}
 
-	_ = id
-	_ = ministryID
-	_ = siteID
-	_ = name
-	_ = rules
-	_ = effectiveFrom
-	_ = effectiveTo
-	_ = version
-	_ = supersedes
-	return nil, nil
+func (r *PolicyRepository) scanRow(row pgx.Row) (*domain.AttendancePolicy, error) {
+	return scanPolicy(row)
 }
 
 func (r *PolicyRepository) scanRows(rows pgx.Rows) ([]*domain.AttendancePolicy, error) {
-	var policies []*domain.AttendancePolicy
+	policies := make([]*domain.AttendancePolicy, 0)
 	for rows.Next() {
-		var (
-			id, ministryID             uuid.UUID
-			siteID                     *uuid.UUID
-			name                       string
-			rules                      domain.AttendanceRuleSet
-			effectiveFrom              time.Time
-			effectiveTo                *time.Time
-			version                    int
-			supersedes                 *uuid.UUID
-		)
-
-		err := rows.Scan(
-			&id, &ministryID, &siteID, &name, &rules,
-			&effectiveFrom, &effectiveTo, &version, &supersedes,
-		)
+		policy, err := scanPolicy(rows)
 		if err != nil {
 			return nil, err
 		}
-		_ = id
-		_ = ministryID
-		_ = siteID
-		_ = name
-		_ = rules
-		_ = effectiveFrom
-		_ = effectiveTo
-		_ = version
-		_ = supersedes
+		if policy != nil {
+			policies = append(policies, policy)
+		}
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return policies, nil
 }

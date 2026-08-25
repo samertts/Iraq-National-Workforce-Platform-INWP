@@ -21,7 +21,7 @@ tokio-stream = "0.1"
 futures = "0.3"
 
 # gRPC + Protobuf
-tonic = "0.12"
+tonic = { version = "0.12", features = ["tls"] }
 prost = "0.13"
 prost-types = "0.13"
 

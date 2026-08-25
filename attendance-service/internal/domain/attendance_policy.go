@@ -7,18 +7,18 @@ import (
 )
 
 type AttendancePolicy struct {
-	id              uuid.UUID
-	ministryID      uuid.UUID
-	siteID          *uuid.UUID
-	name            string
-	rules           AttendanceRuleSet
-	effectiveFrom   time.Time
-	effectiveTo     *time.Time
-	version         int
-	supersedes      *uuid.UUID
-	approvedBy      uuid.UUID
-	createdAt       time.Time
-	domainEvents    []DomainEvent
+	id            uuid.UUID
+	ministryID    uuid.UUID
+	siteID        *uuid.UUID
+	name          string
+	rules         AttendanceRuleSet
+	effectiveFrom time.Time
+	effectiveTo   *time.Time
+	version       int
+	supersedes    *uuid.UUID
+	approvedBy    uuid.UUID
+	createdAt     time.Time
+	domainEvents  []DomainEvent
 }
 
 func NewAttendancePolicy(
@@ -43,7 +43,7 @@ func NewAttendancePolicy(
 	}
 }
 
-func (p *AttendancePolicy) Identity() uuid.UUID        { return p.id }
+func (p *AttendancePolicy) Identity() uuid.UUID         { return p.id }
 func (p *AttendancePolicy) Version() int64              { return int64(p.version) }
 func (p *AttendancePolicy) DomainEvents() []DomainEvent { return p.domainEvents }
 func (p *AttendancePolicy) ClearEvents()                { p.domainEvents = nil }
@@ -54,6 +54,8 @@ func (p *AttendancePolicy) Rules() AttendanceRuleSet    { return p.rules }
 func (p *AttendancePolicy) EffectiveFrom() time.Time    { return p.effectiveFrom }
 func (p *AttendancePolicy) EffectiveTo() *time.Time     { return p.effectiveTo }
 func (p *AttendancePolicy) Supersedes() *uuid.UUID      { return p.supersedes }
+func (p *AttendancePolicy) ApprovedBy() uuid.UUID       { return p.approvedBy }
+func (p *AttendancePolicy) CreatedAt() time.Time        { return p.createdAt }
 
 func (p *AttendancePolicy) Supersede(newPolicyID uuid.UUID, effectiveTo time.Time) {
 	p.effectiveTo = &effectiveTo

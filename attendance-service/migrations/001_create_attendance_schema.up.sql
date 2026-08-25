@@ -143,7 +143,8 @@ CREATE TABLE sync.outbox (
     source_node_id  UUID NOT NULL,
     status          TEXT NOT NULL DEFAULT 'pending',
     payload         JSONB,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_error      TEXT
 );
 
 CREATE INDEX idx_outbox_status ON sync.outbox (status) WHERE status = 'pending';
