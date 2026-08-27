@@ -98,7 +98,7 @@ mockall = "0.13"
 testcontainers = "0.23"
 
 [build-dependencies]
-tonic-build = "0.12"
+tonic-build = "0.14"
 
 [profile.release]
 lto = true
