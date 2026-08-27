@@ -71,7 +71,7 @@ toml = "0.8"
 dotenvy = "0.15"
 
 # Messaging (NATS for national hub)
-async-nats = "0.38"
+async-nats = "0.49"
 
 # Async trait support
 async-trait = "0.1"
