@@ -1,11 +1,14 @@
 package application
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/domain"
 )
+
+var ErrExceptionNotFound = errors.New("attendance exception not found")
 
 type JustifyExceptionCommand struct {
 	ExceptionID uuid.UUID
@@ -33,6 +36,12 @@ func (h *JustifyExceptionHandler) Handle(cmd JustifyExceptionCommand) error {
 	if err != nil {
 		return err
 	}
+	if exception == nil {
+		return ErrExceptionNotFound
+	}
+	if cmd.Reason == "" {
+		return errors.New("justification reason is required")
+	}
 
 	exception.Justify(cmd.Reason, cmd.Type)
 	exception.RaiseEvent(&domain.ExceptionJustified{
@@ -42,7 +51,7 @@ func (h *JustifyExceptionHandler) Handle(cmd JustifyExceptionCommand) error {
 			Version: "1.0.0",
 			Time:    time.Now().UTC(),
 		},
-		ExceptionID:      exception.Identity(),
+		ExceptionID:       exception.Identity(),
 		JustificationType: cmd.Type,
 	})
 
@@ -84,6 +93,12 @@ func (h *ResolveExceptionHandler) Handle(cmd ResolveExceptionCommand) error {
 	exception, err := h.exceptionRepo.FindByID(cmd.ExceptionID)
 	if err != nil {
 		return err
+	}
+	if exception == nil {
+		return ErrExceptionNotFound
+	}
+	if cmd.ResolvedBy == uuid.Nil {
+		return errors.New("resolved_by is required")
 	}
 
 	exception.Resolve(cmd.ResolvedBy)

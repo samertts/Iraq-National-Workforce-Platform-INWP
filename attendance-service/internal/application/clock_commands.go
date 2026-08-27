@@ -1,6 +1,7 @@
 package application
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -9,11 +10,12 @@ import (
 )
 
 var (
-	ErrDuplicateEvent    = errors.New("duplicate clock event detected")
-	ErrInvalidEventType  = errors.New("invalid event type")
-	ErrEventInFuture     = errors.New("event time cannot be in the future")
-	ErrBiometricMismatch = errors.New("biometric verification failed")
-	ErrDeviceNotTrusted  = errors.New("device is not trusted")
+	ErrDuplicateEvent       = errors.New("duplicate clock event detected")
+	ErrInvalidEventType     = errors.New("invalid event type")
+	ErrEventInFuture        = errors.New("event time cannot be in the future")
+	ErrBiometricMismatch    = errors.New("biometric verification failed")
+	ErrBiometricUnavailable = errors.New("biometric verification is not configured")
+	ErrDeviceNotTrusted     = errors.New("device is not trusted")
 )
 
 type ClockInCommand struct {
@@ -78,6 +80,9 @@ func (h *ClockInHandler) Handle(cmd ClockInCommand) (*domain.ClockEvent, error) 
 
 	var biometricMatch *float64
 	if cmd.BiometricData != nil {
+		if h.biometricSvc == nil {
+			return nil, ErrBiometricUnavailable
+		}
 		result, err := h.biometricSvc.Verify(cmd.EmployeeID, cmd.DeviceID, cmd.BiometricData)
 		if err != nil {
 			return nil, err
@@ -136,7 +141,11 @@ func (h *ClockInHandler) Handle(cmd ClockInCommand) (*domain.ClockEvent, error) 
 		}
 	}
 
-	if err := h.syncQueue.Enqueue(event.Identity(), event.SyncMetadata()); err != nil {
+	payload, err := json.Marshal(event.SyncPayload())
+	if err != nil {
+		return nil, err
+	}
+	if err := h.syncQueue.Enqueue(event.Identity(), event.SyncMetadata(), payload); err != nil {
 		return nil, err
 	}
 
@@ -200,6 +209,9 @@ func (h *ClockOutHandler) Handle(cmd ClockOutCommand) (*domain.ClockEvent, error
 
 	var biometricMatch *float64
 	if cmd.BiometricData != nil {
+		if h.biometricSvc == nil {
+			return nil, ErrBiometricUnavailable
+		}
 		result, err := h.biometricSvc.Verify(cmd.EmployeeID, cmd.DeviceID, cmd.BiometricData)
 		if err != nil {
 			return nil, err
@@ -258,7 +270,11 @@ func (h *ClockOutHandler) Handle(cmd ClockOutCommand) (*domain.ClockEvent, error
 		}
 	}
 
-	if err := h.syncQueue.Enqueue(event.Identity(), event.SyncMetadata()); err != nil {
+	payload, err := json.Marshal(event.SyncPayload())
+	if err != nil {
+		return nil, err
+	}
+	if err := h.syncQueue.Enqueue(event.Identity(), event.SyncMetadata(), payload); err != nil {
 		return nil, err
 	}
 

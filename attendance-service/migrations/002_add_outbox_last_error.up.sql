@@ -1,0 +1,1 @@
+ALTER TABLE sync.outbox ADD COLUMN IF NOT EXISTS last_error TEXT;

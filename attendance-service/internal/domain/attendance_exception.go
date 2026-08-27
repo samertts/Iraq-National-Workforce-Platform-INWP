@@ -7,19 +7,19 @@ import (
 )
 
 type AttendanceException struct {
-	id              uuid.UUID
-	employeeID      EmployeeID
-	clockEventID    *uuid.UUID
-	exceptionType   ExceptionType
-	severity        ExceptionSeverity
-	description     string
-	occurredAt      time.Time
-	detectedAt      time.Time
-	justification   *Justification
-	resolvedAt      *time.Time
-	resolvedBy      *uuid.UUID
-	escalatedAt     *time.Time
-	domainEvents    []DomainEvent
+	id            uuid.UUID
+	employeeID    EmployeeID
+	clockEventID  *uuid.UUID
+	exceptionType ExceptionType
+	severity      ExceptionSeverity
+	description   string
+	occurredAt    time.Time
+	detectedAt    time.Time
+	justification *Justification
+	resolvedAt    *time.Time
+	resolvedBy    *uuid.UUID
+	escalatedAt   *time.Time
+	domainEvents  []DomainEvent
 }
 
 func NewAttendanceException(
@@ -43,16 +43,23 @@ func NewAttendanceException(
 	}
 }
 
-func (e *AttendanceException) Identity() uuid.UUID        { return e.id }
-func (e *AttendanceException) Version() int64              { return 1 }
-func (e *AttendanceException) DomainEvents() []DomainEvent { return e.domainEvents }
-func (e *AttendanceException) ClearEvents()                { e.domainEvents = nil }
-func (e *AttendanceException) EmployeeID() EmployeeID      { return e.employeeID }
-func (e *AttendanceException) ExceptionType() ExceptionType { return e.exceptionType }
-func (e *AttendanceException) Severity() ExceptionSeverity  { return e.severity }
-func (e *AttendanceException) Description() string          { return e.description }
-func (e *AttendanceException) IsResolved() bool             { return e.resolvedAt != nil }
-func (e *AttendanceException) IsEscalated() bool            { return e.escalatedAt != nil }
+func (e *AttendanceException) Identity() uuid.UUID           { return e.id }
+func (e *AttendanceException) Version() int64                { return 1 }
+func (e *AttendanceException) DomainEvents() []DomainEvent   { return e.domainEvents }
+func (e *AttendanceException) ClearEvents()                  { e.domainEvents = nil }
+func (e *AttendanceException) EmployeeID() EmployeeID        { return e.employeeID }
+func (e *AttendanceException) ExceptionType() ExceptionType  { return e.exceptionType }
+func (e *AttendanceException) Severity() ExceptionSeverity   { return e.severity }
+func (e *AttendanceException) Description() string           { return e.description }
+func (e *AttendanceException) IsResolved() bool              { return e.resolvedAt != nil }
+func (e *AttendanceException) IsEscalated() bool             { return e.escalatedAt != nil }
+func (e *AttendanceException) ClockEventID() *uuid.UUID      { return e.clockEventID }
+func (e *AttendanceException) OccurredAt() time.Time         { return e.occurredAt }
+func (e *AttendanceException) DetectedAt() time.Time         { return e.detectedAt }
+func (e *AttendanceException) Justification() *Justification { return e.justification }
+func (e *AttendanceException) ResolvedAt() *time.Time        { return e.resolvedAt }
+func (e *AttendanceException) ResolvedBy() *uuid.UUID        { return e.resolvedBy }
+func (e *AttendanceException) EscalatedAt() *time.Time       { return e.escalatedAt }
 
 func (e *AttendanceException) Justify(reason string, jType JustificationType) {
 	e.justification = &Justification{

@@ -29,10 +29,10 @@ type OutboxEntry struct {
 	CreatedAt    time.Time       `json:"created_at"`
 }
 
-func (o *Outbox) Enqueue(entityID uuid.UUID, metadata domain.SyncMetadata) error {
+func (o *Outbox) Enqueue(entityID uuid.UUID, metadata domain.SyncMetadata, payload []byte) error {
 	query := `
-		INSERT INTO sync.outbox (entity_id, entity_type, sync_id, source_node_id, status)
-		VALUES ($1, 'clock_event', $2, $3, 'pending')`
+		INSERT INTO sync.outbox (entity_id, entity_type, sync_id, source_node_id, status, payload)
+		VALUES ($1, 'clock_event', $2, $3, 'pending', $4)`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -41,18 +41,19 @@ func (o *Outbox) Enqueue(entityID uuid.UUID, metadata domain.SyncMetadata) error
 		entityID,
 		metadata.SyncID,
 		metadata.SourceNodeID,
+		payload,
 	)
 	return err
 }
 
-func (o *Outbox) FetchPending(limit int) ([]OutboxEntry, error) {
+func (o *Outbox) ClaimPending(limit int) ([]OutboxEntry, error) {
 	query := `
-		SELECT id, entity_id, entity_type, sync_id, source_node_id, status, payload, created_at
-		FROM sync.outbox
-		WHERE status = 'pending'
-		ORDER BY created_at ASC
-		LIMIT $1
-		FOR UPDATE SKIP LOCKED`
+		UPDATE sync.outbox SET status = 'processing'
+		WHERE id IN (
+			SELECT id FROM sync.outbox WHERE status = 'pending'
+			ORDER BY created_at ASC LIMIT $1 FOR UPDATE SKIP LOCKED
+			)
+		RETURNING id, entity_id, entity_type, sync_id, source_node_id, status, payload, created_at`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -76,7 +77,27 @@ func (o *Outbox) FetchPending(limit int) ([]OutboxEntry, error) {
 		entries = append(entries, entry)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return entries, nil
+}
+
+// FetchPending is retained as a read-only compatibility alias.
+func (o *Outbox) FetchPending(limit int) ([]OutboxEntry, error) { return o.ClaimPending(limit) }
+
+func (o *Outbox) ResetStale(age time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := o.pool.Exec(ctx, `UPDATE sync.outbox SET status = 'pending' WHERE status = 'processing' AND created_at < $1`, time.Now().UTC().Add(-age))
+	return err
+}
+
+func (o *Outbox) MarkFailed(id uuid.UUID, reason string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := o.pool.Exec(ctx, `UPDATE sync.outbox SET status = 'failed', last_error = $2 WHERE id = $1`, id, reason)
+	return err
 }
 
 func (o *Outbox) MarkSent(id uuid.UUID) error {

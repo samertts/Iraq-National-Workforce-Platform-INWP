@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 #![allow(clippy::large_enum_variant)]
+#![allow(clippy::result_large_err)]
+#![allow(clippy::question_mark)]
 
 pub mod anti_corruption;
 pub mod chaos;

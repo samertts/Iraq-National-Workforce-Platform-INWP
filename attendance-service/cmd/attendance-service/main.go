@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +20,7 @@ import (
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/application"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/domain"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/eventbus"
+	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/gula"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/postgres"
 	"github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/infrastructure/sync"
 	grpciface "github.com/samertts/Iraq-National-Workforce-Platform-INWP/attendance-service/internal/interfaces/grpc"
@@ -28,6 +28,12 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--healthcheck" {
+		if err := checkLocalPort(getEnv("HTTP_PORT", "8080")); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 	cfg := loadConfig()
@@ -54,6 +60,8 @@ func main() {
 	var eventPub application.EventPublisher
 	if nc != nil {
 		eventPub = eventbus.NewNATSPublisher(nc)
+	} else if gulaURL, gulaToken := os.Getenv("GULA_BASE_URL"), os.Getenv("GULA_ACCESS_TOKEN"); gulaURL != "" && gulaToken != "" {
+		eventPub = &gula.Publisher{BaseURL: gulaURL, AccessToken: gulaToken, MaxRetries: 3, Backoff: time.Second}
 	} else {
 		eventPub = &eventbus.NoopPublisher{}
 	}
@@ -77,6 +85,13 @@ func main() {
 	setPolicyHandler := application.NewSetAttendancePolicyHandler(policyRepo, eventPub)
 	justifyExceptionH := application.NewJustifyExceptionHandler(exceptionRepo, eventPub)
 	resolveExceptionH := application.NewResolveExceptionHandler(exceptionRepo, eventPub)
+
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	if nc != nil {
+		relay := sync.NewRelay(syncOutbox, nc)
+		go relay.Run(relayCtx)
+	}
 
 	router := httprouter.New()
 	restHandler := rest.NewHandler(
@@ -138,6 +153,7 @@ func main() {
 		logger.Error().Err(err).Msg("HTTP server forced shutdown")
 	}
 
+	relayCancel()
 	logger.Info().Msg("servers stopped")
 }
 
@@ -159,6 +175,14 @@ func loadConfig() config {
 	}
 }
 
+func checkLocalPort(port string) error {
+	conn, err := net.DialTimeout("tcp", "127.0.0.1:"+port, time.Second)
+	if err != nil {
+		return err
+	}
+	return conn.Close()
+}
+
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -175,6 +199,9 @@ func (d *basicDuplicateDetector) IsDuplicate(employeeID domain.EmployeeID, devic
 }
 
 func (d *basicDuplicateDetector) FindNearDuplicates(employeeID domain.EmployeeID, timeWindow time.Duration) ([]*domain.ClockEvent, error) {
-	log.Printf("FindNearDuplicates called for employee %v with window %v", employeeID, timeWindow)
-	return nil, nil
+	if timeWindow <= 0 {
+		timeWindow = 30 * time.Second
+	}
+	now := time.Now().UTC()
+	return d.repo.FindByEmployee(employeeID, now.Add(-timeWindow), now.Add(timeWindow))
 }
