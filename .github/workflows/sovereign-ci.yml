@@ -119,7 +119,7 @@ jobs:
         working-directory: ${{ env.SERVICE_DIR }}
         run: go list -m all > /tmp/inwp-go-modules.txt
       - name: Upload dependency manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: inwp-go-modules
           path: /tmp/inwp-go-modules.txt
