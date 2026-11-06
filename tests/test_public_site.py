@@ -81,6 +81,15 @@ class PublicSiteTests(unittest.TestCase):
         self.assertIn("DEMO-001", js)
         self.assertIn("localStorage", js)
 
+    def test_crawler_metadata_and_robots_are_present(self):
+        html = (SITE / "index.html").read_text()
+        self.assertIn('<meta name="description"', html)
+        self.assertIn('<meta property="og:title"', html)
+        self.assertIn('<meta name="twitter:card"', html)
+        self.assertIn("translations[next].pageTitle", (SITE / "app.js").read_text())
+        self.assertIn("User-agent: *\nAllow: /", (SITE / "robots.txt").read_text())
+        self.assertFalse(re.search(r'<link rel="canonical"', html, re.I))
+
 
 if __name__ == "__main__":
     unittest.main()

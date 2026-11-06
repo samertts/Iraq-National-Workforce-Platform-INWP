@@ -19,3 +19,9 @@
 ## حدود المحتوى
 
 هذه الصفحة تعريفية وليست إعلانًا رسميًا أو إثبات امتثال أو اعتماد حكومي. المعمارية المعروضة مفاهيمية، وحالة الخدمات غير مقاسة. لا تُضف عقودًا داخلية أو سجلات تشغيل أو عناوين شبكة أو بيانات موظفين أو مفاتيح. تُراجع أي وثائق عامة جديدة قبل إضافتها إلى artifact.
+
+## مراجع المنصة
+
+- [استخدام GitHub Actions مع GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+- [GitHub REST API — Pages](https://docs.github.com/en/rest/pages/pages)
+- [التعامل مع استجابات HTTP وسياسة المحتوى في GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)

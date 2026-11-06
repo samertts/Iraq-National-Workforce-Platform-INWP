@@ -21,3 +21,15 @@ document.getElementById('year').textContent=String(new Date().getFullYear());set
 // Extra strings used by the standalone not-found page.
 translations.en.notFoundTitle='This page could not be found';translations.en.notFoundText='Check the address or return to the home page.';translations.en.backHome='Back to home';
 translations.ar.notFoundTitle='هذه الصفحة غير موجودة';translations.ar.notFoundText='تحقق من الرابط أو عد إلى الصفحة الرئيسية.';translations.ar.backHome='العودة للرئيسية';
+
+translations.en.pageTitle='INWP | Iraq National Workforce Platform';
+translations.en.metaDescription='Public information portal for the Iraq National Workforce Platform (INWP), independent of production services and employee data.';
+translations.ar.pageTitle='INWP | منصة القوى العاملة الوطنية العراقية';
+translations.ar.metaDescription='بوابة تعريفية عامة بمنصة القوى العاملة الوطنية العراقية INWP — مستقلة عن الخدمات التشغيلية وبيانات الموظفين.';
+const originalSetLanguage=setLanguage;
+setLanguage=function(next){originalSetLanguage(next);document.title=translations[next].pageTitle;document.querySelectorAll('[data-i18n-content]').forEach(el=>{el.setAttribute('content',translations[next][el.dataset.i18nContent])});};
+setLanguage('ar');
+
+translations.en.footerStatic='Static site · no tracking · no personal data stored';
+translations.ar.footerStatic='موقع ثابت · لا تتبع · لا تخزين لبيانات شخصية';
+setLanguage('ar');

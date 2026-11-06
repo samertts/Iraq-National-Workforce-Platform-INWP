@@ -19,6 +19,9 @@ use tonic::{
 };
 use tracing::info;
 
+// async_trait-generated service methods already return must-use futures; keep this
+// compatibility exception scoped to generated protocol code, not handwritten handlers.
+#[allow(clippy::double_must_use)]
 pub mod proto {
     tonic::include_proto!("inwp.sync.v1");
 }
