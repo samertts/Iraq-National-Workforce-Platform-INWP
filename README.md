@@ -1,2 +1,17 @@
-# Iraq-National-Workforce-Platform-INWP-
-A sovereign distributed workforce operating platform for Iraq designed for offline-first government operations, attendance management, leave systems, secure identity, event-driven audit trails, and multi-ministry synchronization. Built for resilience, scalability, security, and operation under unstable infrastructure and limited connectivity.
+# منصة القوى العاملة الوطنية العراقية (INWP)
+
+منصة قيد التطوير لتنسيق خدمات القوى العاملة بين الجهات، مع مراعاة العمل في بيئات اتصال متفاوتة. يحتوي المستودع على نواة backend لمسار الحضور والمزامنة، وتصورات معمارية، وبوابة عامة.
+
+## الحالة الحالية
+
+المشروع **ليس منصة وطنية مكتملة أو جاهزة للإنتاج**. يصف [تقرير التنفيذ](IMPLEMENTATION_REPORT_AR.md) حدود ما يعمل في نواة الحضور والمزامنة وما لم يكتمل بعد، بما في ذلك الهوية وسجل الموظفين والإجازات والرواتب ولوحة التشغيل.
+
+تتضمن البوابة العامة رابطًا إلى [لوحة عرض توضيحية](https://samertts.github.io/Iraq-National-Workforce-Platform-INWP/console/) تستعمل معرفات وسجلات اصطناعية فقط. لا يوجد فيها تسجيل دخول أو قاعدة بيانات أو API أو عمليات إدارية؛ لا ترفع إليها بيانات حقيقية ولا تستخدمها لاتخاذ قرارات تشغيلية.
+
+## خارطة التطوير
+
+راجع [خارطة تنفيذ المنصة](docs/IMPLEMENTATION_ROADMAP_AR.md) للمراحل المقترحة، وبوابات الأمن وسلامة البيانات، والقرارات المطلوبة قبل ربط أي بيانات حقيقية. الرواتب وسياسات الموارد البشرية تحتاج قواعد معتمدة من مالك العمل؛ لا تُستنتج من الشيفرة.
+
+## التشغيل المحلي
+
+إعداد Compose الحالي مخصص للتطوير والاختبارات المحلية فقط، وليس بيئة staging أو إنتاج. راجع [دليل النشر](PAGES_DEPLOYMENT.md) لحدود GitHub Pages، و[دليل التشغيل العربي](deploy/README.ar.md) لمتطلبات الخدمات الخلفية.
