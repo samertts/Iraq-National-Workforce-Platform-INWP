@@ -74,11 +74,32 @@ class PublicSiteTests(unittest.TestCase):
                 self.assertTrue((SITE / target.removeprefix("./")).exists(), link)
 
     def test_no_backend_connections_or_credentials(self):
-        source = "\n".join(p.read_text() for p in SITE.iterdir() if p.is_file())
+        source = "\n".join(p.read_text() for p in SITE.rglob("*") if p.is_file())
         self.assertNotRegex(source, r"(?i)(postgres(?:ql)?://|nats://|GULA_ACCESS_TOKEN|JWT_SECRET|BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY)")
         parser = PageParser()
         parser.feed((SITE / "index.html").read_text())
         self.assertIn("connect-src 'none'", parser.csp[0])
+
+    def test_admin_console_is_a_synthetic_static_demo(self):
+        page = SITE / "console/index.html"
+        js = (SITE / "console/app.js").read_text()
+        html = page.read_text()
+        parser = PageParser()
+        parser.feed(html)
+        self.assertEqual(parser.langs, [("ar", "rtl")])
+        self.assertIn("connect-src 'none'", parser.csp[0])
+        self.assertIn('name="robots" content="noindex, nofollow"', html)
+        self.assertIn("EMP-DEMO-001", js)
+        self.assertIn("بيانات اصطناعية", html)
+        self.assertNotRegex(js, r"\b(fetch|XMLHttpRequest|WebSocket)\b")
+        for asset in parser.assets:
+            self.assertFalse(asset.startswith(("http:", "https:", "//")), asset)
+            self.assertTrue((page.parent / asset.removeprefix("./")).is_file(), asset)
+
+    def test_public_portal_links_to_demo_console(self):
+        html = (SITE / "index.html").read_text()
+        self.assertIn('href="./console/"', html)
+        self.assertIn("translations.en.consolePreview", (SITE / "app.js").read_text())
 
     def test_bilingual_controls_and_synthetic_demo_present(self):
         html = (SITE / "index.html").read_text()
