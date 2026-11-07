@@ -42,6 +42,15 @@ class PublicSiteTests(unittest.TestCase):
         self.assertRegex(workflow, r"upload-pages-artifact[^\n]*\n\s+with:\n\s+path: site/")
         self.assertNotIn("deploy/docker-compose", workflow)
 
+    def test_only_curated_workflow_deploys_to_pages(self):
+        workflow_files = list((ROOT / ".github/workflows").glob("*.yml"))
+        workflow_files += list((ROOT / ".github/workflows").glob("*.yaml"))
+        deployers = sorted(
+            path.name for path in workflow_files
+            if "actions/deploy-pages@" in path.read_text()
+        )
+        self.assertEqual(deployers, ["pages.yml"])
+
     def test_html_languages_and_csp(self):
         for filename in ("index.html", "404.html"):
             parser = PageParser()
