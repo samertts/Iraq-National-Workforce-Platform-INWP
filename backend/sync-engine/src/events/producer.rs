@@ -64,6 +64,9 @@ impl EventProducer {
     }
 }
 
+// async_trait marks the generated Future as must-use; suppress Clippy's duplicate
+// annotation warning only for this trait, retaining strict linting elsewhere.
+#[allow(clippy::double_must_use)]
 #[async_trait::async_trait]
 pub trait EventPublisher: Send + Sync {
     async fn publish(&self, event: &SyncEvent) -> SyncResult<()>;

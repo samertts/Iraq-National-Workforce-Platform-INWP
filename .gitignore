@@ -28,3 +28,7 @@ docker-data/
 # Temporary
 tmp/
 temp/
+
+# Python cache
+__pycache__/
+*.py[cod]
