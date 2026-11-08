@@ -96,26 +96,32 @@ class PublicSiteTests(unittest.TestCase):
             self.assertFalse(asset.startswith(("http:", "https:", "//")), asset)
             self.assertTrue((page.parent / asset.removeprefix("./")).is_file(), asset)
 
-    def test_access_screen_is_nonfunctional_and_does_not_collect_credentials(self):
+    def test_access_screen_is_fail_closed_until_formspree_is_configured(self):
         page = SITE / "console/access.html"
         html = page.read_text()
         js = (SITE / "console/access.js").read_text()
+        config = (SITE / "console/access-config.js").read_text()
         css = (SITE / "console/access.css").read_text()
         parser = PageParser()
         parser.feed(html)
         self.assertEqual(parser.langs, [("ar", "rtl")])
         self.assertIn("connect-src 'none'", parser.csp[0])
-        self.assertIn("form-action 'none'", parser.csp[0])
+        self.assertIn("form-action https://formspree.io", parser.csp[0])
         self.assertIn('name="robots" content="noindex, nofollow"', html)
-        self.assertRegex(html, r'type="password"[^>]*disabled')
+        self.assertIn('type="password"', html)
         self.assertIn('id="request-panel"', html)
-        self.assertIn('type="button" disabled', html)
-        self.assertNotRegex(js, r"\b(fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB)\b")
-        self.assertNotIn("<form", html.lower())
+        self.assertIn('id="request-consent"', html)
+        self.assertIn('name="_gotcha"', html)
+        self.assertIn("endpoint: ''", config)
+        self.assertIn("enabled: false", config)
+        self.assertIn("cfg.enabled!==true", js)
+        self.assertNotRegex(js, r"\b(XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB)\b")
+        self.assertNotIn('action="https://', html)
+        self.assertNotRegex(html, r'type="password"[^>]*value=')
+        self.assertIn("formspree.io", css + js + config)
         for asset in parser.assets:
             self.assertFalse(asset.startswith(("http:", "https:", "//")), asset)
             self.assertTrue((page.parent / asset.removeprefix("./")).is_file(), asset)
-        self.assertIn("display:grid", css)
 
     def test_console_links_to_access_preview(self):
         html = (SITE / "console/index.html").read_text()
