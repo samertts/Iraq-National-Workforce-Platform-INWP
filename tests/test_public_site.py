@@ -96,7 +96,7 @@ class PublicSiteTests(unittest.TestCase):
             self.assertFalse(asset.startswith(("http:", "https:", "//")), asset)
             self.assertTrue((page.parent / asset.removeprefix("./")).is_file(), asset)
 
-    def test_access_screen_is_fail_closed_until_formspree_is_configured(self):
+    def test_access_screen_uses_approved_formspree_endpoint_and_remains_guarded(self):
         page = SITE / "console/access.html"
         html = page.read_text()
         js = (SITE / "console/access.js").read_text()
@@ -112,8 +112,8 @@ class PublicSiteTests(unittest.TestCase):
         self.assertIn('id="request-panel"', html)
         self.assertIn('id="request-consent"', html)
         self.assertIn('name="_gotcha"', html)
-        self.assertIn("endpoint: ''", config)
-        self.assertIn("enabled: false", config)
+        self.assertIn("endpoint: 'https://formspree.io/f/xnppyere'", config)
+        self.assertIn("enabled: true", config)
         self.assertIn("cfg.enabled!==true", js)
         self.assertNotRegex(js, r"\b(XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB)\b")
         self.assertNotIn('action="https://', html)
