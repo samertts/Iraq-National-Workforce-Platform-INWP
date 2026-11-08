@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10251f">
+  <meta name="description" content="تصميم تجريبي لواجهة الوصول إلى INWP. غير متصل ولا يقبل بيانات اعتماد.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>الدخول إلى INWP — نموذج واجهة</title>
+  <link rel="stylesheet" href="./access.css">
+  <script src="./access.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
+  <main id="main" class="access-shell">
+    <section class="brand-panel" aria-label="تعريف المنصة">
+      <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">I</span><span><strong>INWP</strong><small data-copy="brand">منصة القوى العاملة الوطنية</small></span></a>
+      <div class="brand-message"><p class="eyebrow" data-copy="eyebrow">هوية موثوقة · وصول مؤسسي</p><h1 data-copy="headline">بوابة وصول موحدة<br>لخدمات القوى العاملة</h1><p data-copy="subhead">تصور أولي لمسار الدخول وطلب الوصول. المصادقة الحقيقية غير مفعلة في هذا الموقع.</p></div>
+      <p class="brand-foot" data-copy="brandFoot">نموذج واجهة فقط · لا يعالج بيانات اعتماد</p>
+    </section>
+    <section class="form-panel">
+      <div class="topline"><a href="./" class="back-link" data-copy="back">العودة إلى العرض التوضيحي</a><button type="button" id="language" class="language">EN</button></div>
+      <div class="demo-warning" role="note"><strong data-copy="warningTitle">نموذج غير تشغيلي</strong><p data-copy="warning">لا تدخل كلمة مرور أو بيانات حقيقية. الحقول معطلة ولا تُرسل أو تُحفظ أي معلومات.</p></div>
+      <div class="auth-card">
+        <div class="tabs" role="tablist" aria-label="خيارات الوصول">
+          <button id="tab-login" class="tab active" type="button" role="tab" aria-selected="true" aria-controls="login-panel" data-mode="login" data-copy="tabLogin">تسجيل الدخول</button>
+          <button id="tab-request" class="tab" type="button" role="tab" aria-selected="false" aria-controls="request-panel" data-mode="request" data-copy="tabRequest">طلب حساب</button>
+        </div>
+        <section id="login-panel" role="tabpanel" aria-labelledby="tab-login">
+          <h2 data-copy="loginTitle">مرحبًا بعودتك</h2><p class="muted" data-copy="loginIntro">استخدم حساب الجهة المعتمد عند تفعيل خدمة الهوية.</p>
+          <label for="login-email" data-copy="email">البريد المؤسسي</label><input id="login-email" type="email" value="user@example.invalid" disabled autocomplete="off">
+          <label for="login-password" data-copy="password">كلمة المرور</label><input id="login-password" type="password" placeholder="••••••••••" disabled autocomplete="off">
+          <button class="primary" type="button" disabled data-copy="loginButton">الدخول غير متاح في العرض</button>
+          <p class="micro" data-copy="sso">ستُربط المصادقة لاحقًا بموفر هوية مؤسسي مع جلسات آمنة وتفويض على الخادم.</p>
+        </section>
+        <section id="request-panel" role="tabpanel" aria-labelledby="tab-request" hidden>
+          <h2 data-copy="requestTitle">طلب الوصول إلى المنصة</h2><p class="muted" data-copy="requestIntro">الحسابات التشغيلية يجب أن تُنشأ بدعوة وموافقة مسؤول مخول، لا بتسجيل عام مفتوح.</p>
+          <label for="request-name" data-copy="fullName">الاسم الوظيفي</label><input id="request-name" type="text" value="مثال توضيحي" disabled autocomplete="off">
+          <label for="request-email" data-copy="workEmail">البريد المؤسسي</label><input id="request-email" type="email" value="user@example.invalid" disabled autocomplete="off">
+          <label for="request-org" data-copy="organization">الجهة / الوحدة</label><input id="request-org" type="text" value="تُحدد من مسؤول الجهة" disabled autocomplete="off">
+          <button class="primary" type="button" disabled data-copy="requestButton">إرسال الطلب غير متاح في العرض</button>
+          <p class="micro" data-copy="approval">لا تُنشأ حسابات ذات صلاحيات ذاتية. يجب التحقق من الهوية والجهة والدور وموافقة المالك عبر مسار معتمد.</p>
+        </section>
+      </div>
+      <footer data-copy="footer">INWP · معاينة بصرية فقط · لا توجد خدمة خلفية</footer>
+    </section>
+  </main>
+</body>
+</html>
