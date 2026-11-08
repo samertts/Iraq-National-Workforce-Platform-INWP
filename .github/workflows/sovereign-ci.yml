@@ -77,9 +77,10 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ env.SYNC_DIR }}/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/sync-engine/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          # Do not restore compiled target artifacts across hosted runners.
+          # A cached build script can be incompatible with the current runner CPU.
+          key: ${{ runner.os }}-cargo-deps-v2-${{ hashFiles('backend/sync-engine/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-deps-v2-
       - name: Rust format check
         working-directory: ${{ env.SYNC_DIR }}
         run: cargo fmt --check
