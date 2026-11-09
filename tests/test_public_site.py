@@ -83,6 +83,7 @@ class PublicSiteTests(unittest.TestCase):
     def test_admin_console_is_a_synthetic_static_demo(self):
         page = SITE / "console/index.html"
         js = (SITE / "console/app.js").read_text()
+        modules = (SITE / "console/modules.js").read_text()
         html = page.read_text()
         parser = PageParser()
         parser.feed(html)
@@ -91,7 +92,11 @@ class PublicSiteTests(unittest.TestCase):
         self.assertIn('name="robots" content="noindex, nofollow"', html)
         self.assertIn("EMP-DEMO-001", js)
         self.assertIn("بيانات اصطناعية", html)
-        self.assertNotRegex(js, r"\b(fetch|XMLHttpRequest|WebSocket)\b")
+        self.assertIn('data-view="platform"', html)
+        self.assertIn('href="./modules.css"', html)
+        self.assertIn('src="./modules.js"', html)
+        self.assertNotRegex(js + modules, r"\b(fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB)\b")
+        self.assertIn("connect-src 'none'", parser.csp[0])
         for asset in parser.assets:
             self.assertFalse(asset.startswith(("http:", "https:", "//")), asset)
             self.assertTrue((page.parent / asset.removeprefix("./")).is_file(), asset)
@@ -132,8 +137,23 @@ class PublicSiteTests(unittest.TestCase):
 
     def test_public_portal_links_to_demo_console(self):
         html = (SITE / "index.html").read_text()
-        self.assertIn('href="./console/"', html)
+        self.assertIn('href="./console/#platform"', html)
         self.assertIn("translations.en.consolePreview", (SITE / "app.js").read_text())
+
+    def test_module_gallery_covers_proposed_features_in_both_languages(self):
+        source = (SITE / "console/modules.js").read_text()
+        required_ids = (
+            "transactions", "announcements", "tickets", "delegation", "calendar", "skills",
+            "opportunities", "handover", "planning", "quality", "dashboard", "integrations",
+            "continuity", "publicData", "suggestions", "guide", "notifications", "onboarding",
+            "privacy", "dashboardPrefs",
+        )
+        for feature in required_ids:
+            self.assertIn(f"id:'{feature}'", source, feature)
+        for key in ("transactionsTitle", "announcementsTitle", "ticketsTitle", "planningTitle", "qualityTitle", "publicDataTitle", "privacyTitle"):
+            self.assertGreaterEqual(source.count(key), 2, key)
+        self.assertIn("connect-src 'none'", (SITE / "console/index.html").read_text())
+        self.assertIn("لا توجد API أو قاعدة بيانات", (ROOT / "docs/PLATFORM_MODULES_AR.md").read_text())
 
     def test_bilingual_controls_and_synthetic_demo_present(self):
         html = (SITE / "index.html").read_text()
