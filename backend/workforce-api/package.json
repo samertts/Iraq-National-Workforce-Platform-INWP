@@ -1,0 +1,16 @@
+{
+  "name": "inwp-workforce-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/auth.js && node --check src/audit.js && node --check src/db.js && node --check src/employees.js && node --check src/security.js"
+  },
+  "dependencies": {
+    "jose": "^6.0.11",
+    "pg": "^8.13.1"
+  }
+}

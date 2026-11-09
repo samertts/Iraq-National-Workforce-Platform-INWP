@@ -1,6 +1,6 @@
 # INWP database migrations (initial foundation)
 
-These migrations create the initial `org`, `iam`, `hr`, and append-only `audit` schemas. They are intended for a clean PostgreSQL 13+ development database and contain no seed or production data.
+These migrations create the initial `org`, `iam`, `hr`, and append-only `audit` schemas plus API idempotency receipts. They are intended for a clean PostgreSQL 13+ development database and contain no seed or production data.
 
 ## Apply order
 
@@ -10,12 +10,13 @@ Run the `*.up.sql` files in numeric order, each as a single migration:
 2. `002_iam.up.sql`
 3. `003_hr.up.sql`
 4. `004_audit.up.sql`
+5. `005_api_idempotency.up.sql`
 
 Each file manages its own transaction. Record each successfully applied migration in the deployment's migration ledger. Do not rerun a partially failed migration blindly; inspect transaction state and migration history first.
 
 ## Rollback order
 
-Rollback is destructive and deletes all data in the affected schemas. Only use it in a disposable development environment or after an explicitly approved, verified backup. Roll back in reverse order: `004_audit.down.sql`, `003_hr.down.sql`, `002_iam.down.sql`, `001_org.down.sql`.
+Rollback is destructive and deletes all data in the affected schemas. Only use it in a disposable development environment or after an explicitly approved, verified backup. Roll back in reverse order: `005_api_idempotency.down.sql`, `004_audit.down.sql`, `003_hr.down.sql`, `002_iam.down.sql`, `001_org.down.sql`.
 
 ## Security boundaries not completed by these files
 

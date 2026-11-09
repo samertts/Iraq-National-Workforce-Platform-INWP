@@ -59,6 +59,33 @@ jobs:
         working-directory: ${{ env.SERVICE_DIR }}
         run: go build ./...
 
+  workforce-api-check:
+    name: Workforce API Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.0.2
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: backend/workforce-api/package-lock.json
+      - name: Install dependencies
+        working-directory: backend/workforce-api
+        run: npm ci --ignore-scripts
+      - name: Check JavaScript syntax
+        working-directory: backend/workforce-api
+        run: npm run check
+      - name: Run API unit tests
+        working-directory: backend/workforce-api
+        run: npm test
+      - name: Audit production dependencies
+        working-directory: backend/workforce-api
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build non-root container image
+        run: docker build --tag inwp-workforce-api:ci backend/workforce-api
+
   sync-engine-check:
     name: Sync Engine Build and Test
     needs: governance-check
